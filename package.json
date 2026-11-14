@@ -1,0 +1,13 @@
+{
+  "name": "hobbit-bitwa-pieciu-armii",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node tests/e2e.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "playwright": "^1.65.1"
+  }
+}

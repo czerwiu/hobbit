@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({ channel: 'chrome' });
+const p = await b.newPage({ viewport: { width: 1280, height: 720 } });
+p.on('console', m => (m.type() === 'error' || m.type() === 'warning') && console.log(m.type(), m.text()));
+p.on('pageerror', e => console.log('pageerror', e.message, e.stack));
+await p.goto('file://' + process.cwd() + '/dist/index.html');
+await p.waitForFunction(() => window.G && G.ready, null, { timeout: 60000 });
+await p.waitForTimeout(1500);
+await p.screenshot({ path: 'docs/screens/menu.png' });
+console.log('fps', await p.evaluate(() => G.fps));
+await b.close();

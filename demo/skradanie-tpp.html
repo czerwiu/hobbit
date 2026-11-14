@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hobbit — demo TPP: skradanie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: Cinzel, Georgia, serif; color: #e9dcb8; }
+  canvas { display: block; transition: filter .35s; }
+  .layer { position: fixed; inset: 0; pointer-events: none; }
+  #vigRing { background: radial-gradient(ellipse at center, transparent 35%, rgba(40,30,5,.55) 75%, rgba(0,0,0,.9) 100%); opacity: 0; transition: opacity .35s; }
+  #vigAlert { background: radial-gradient(ellipse at center, transparent 40%, rgba(170,20,10,.75) 100%); opacity: 0; }
+  #fade { background: #000; opacity: 0; transition: opacity 1.2s; }
+  #hud { position: fixed; top: 22px; left: 26px; font-size: 15px; pointer-events: none; }
+  .row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .row span { width: 96px; }
+  .bar { width: 220px; height: 10px; background: rgba(0,0,0,.55); border: 1px solid #6b6550; }
+  .bar i { display: block; height: 100%; width: 0; }
+  #ringBar i { background: #e8c25a; }
+  #katarBar i { background: #7fbf6a; }
+  #katarBar.warn i { animation: blink .4s steps(2) infinite; }
+  @keyframes blink { 0% { background: #d2463a; } 100% { background: #8a2a22; } }
+  #status { color: #9fb3e0; font-size: 14px; min-height: 18px; }
+  #mark { position: fixed; top: 16%; left: 50%; transform: translateX(-50%); font-size: 56px; color: #ffd27a; text-shadow: 0 0 12px #000; pointer-events: none; }
+  #tip { position: fixed; top: 24%; left: 50%; transform: translateX(-50%); width: min(640px, 90vw); text-align: center; font-size: 18px; color: #c4cee8; text-shadow: 0 2px 6px #000; opacity: 0; transition: opacity .6s; pointer-events: none; }
+  #say { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); max-width: min(760px, 90vw); padding: 12px 20px; background: rgba(5,6,10,.8); border: 1px solid #4a4536; font-family: Georgia, serif; font-size: 20px; color: #f3e6c4; text-align: center; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  #say b { color: #e8c25a; font-family: Cinzel, Georgia, serif; font-weight: 600; margin-right: 8px; }
+  #center { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
+  #center h1 { font-size: 46px; margin: 0 0 14px; text-shadow: 0 3px 10px #000; }
+  #center p { font-size: 20px; margin: 0; line-height: 1.6; color: #cfc4a6; text-shadow: 0 2px 6px #000; white-space: pre-line; }
+  #keys { position: fixed; bottom: 18px; width: 100%; text-align: center; font-size: 15px; color: #b9b09a; opacity: .8; pointer-events: none; }
+  #overlay { position: fixed; inset: 0; background: rgba(0,0,0,.62); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; cursor: pointer; padding: 16px; box-sizing: border-box; }
+  #overlay h1 { font-size: 50px; margin: 0 0 16px; }
+  #overlay p { font-size: 19px; line-height: 1.6; color: #cfc4a6; margin: 0 0 22px; max-width: 760px; white-space: pre-line; }
+  #overlay .go { font-size: 22px; color: #e8c25a; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script src="models/elf-guard.glb.js"></script>
+<script src="models/bilbo.glb.js"></script>
+</head>
+<body>
+<div id="vigRing" class="layer"></div>
+<div id="vigAlert" class="layer"></div>
+<div id="hud">
+  <div class="row"><span>Pierścień</span><div class="bar" id="ringBar"><i></i></div></div>
+  <div class="row"><span>Katar</span><div class="bar" id="katarBar"><i></i></div></div>
+  <div id="status"></div>
+</div>
+<div id="mark"></div>
+<div id="tip"></div>
+<div id="say"></div>
+<div id="center"><h1 id="title"></h1><p id="sub"></p></div>
+<div id="keys">WASD — skradanie · Shift — podbieganie · mysz — kamera · E — pierścień · R — od nowa · Esc — pauza</div>
+<div id="fade" class="layer"></div>
+<div id="overlay">
+  <h1>Droga do obozu</h1>
+  <p>Noc. Bilbo wymyka się z Samotnej Góry z Arcyklejnotem w kieszeni.
+Dojdź do ogniska w obozie ludzi i elfów tak, żeby nikt cię nie zobaczył.
+Skały zasłaniają cię przed latarniami strażników.</p>
+  <div class="go">Kliknij, aby zacząć</div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+
+// Model strażnika: "Hooded Adventurer" (Quaternius, CC0) — osadzony w models/elf-guard.glb.js,
+// żeby gra działała po dwukliku (przeglądarka blokuje wczytywanie plików .glb z dysku).
+// Model Bilba: "Character Animated / Rogue" (Quaternius, CC0), przerobiony w kodzie na hobbita (kolory, bose duże stopy, krępa sylwetka).
+const parseGlb = b64 => new Promise((ok, err) => {
+  const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  new GLTFLoader().parse(bin.buffer, '', ok, err);
+});
+const [elfGltf, bilboGltf] = await Promise.all([parseGlb(window.ELF_GLB), parseGlb(window.BILBO_GLB)]);
+
+// ---------- parametry (do strojenia) ----------
+const BILBO_H = 1.1;            // wzrost hobbita [m]
+const SNEAK = 1.9, RUN = 4.6;   // prędkość: skradanie / podbieganie [m/s]
+const NOISE_R = 7, LISTEN_TIME = 2.5;   // podbieganie słychać z tylu metrów; strażnik nasłuchuje tyle sekund
+const RUN_KATAR = 2.5;          // podbieganie: katar rośnie tyle razy szybciej (zadyszka)
+const CAM_DIST = 4.2;           // odległość kamery za Bilbem [m]
+const BILBO_GLOW = 0.2;         // poświata Bilba (0 = brak, 0.5 = bardzo jasny)
+const RING_TIME = 5, RING_RECHARGE = 3;     // sekundy
+const KATAR_UP = 1 / 25, KATAR_DOWN = 1 / 5; // na sekundę
+const SEE_DIST = 24, CONE_A = 0.4, ALERT_MAX = 0.8;
+const END_Z = -186, FIRE = new THREE.Vector3(0, 0, -198);
+const MOON = new THREE.Vector3(-0.35, 0.42, -1).normalize();
+
+const $ = id => document.getElementById(id);
+const lerp = THREE.MathUtils.lerp, clamp = THREE.MathUtils.clamp;
+const rnd = (a, b) => a + Math.random() * (b - a);
+const hAt = (x, z) => 0.35 * Math.sin(x * 0.13) * Math.cos(z * 0.07) + 0.25 * Math.sin(z * 0.21 + x * 0.05);
+
+// ---------- renderer, scena, kamera ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x0c1124, 0.022);
+const camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.05, 1200);
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+function canvasTex(size, draw) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  draw(c.getContext('2d'), size);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const glowTex = canvasTex(128, (x, s) => {
+  const g = x.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.3, 'rgba(255,255,255,0.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g; x.fillRect(0, 0, s, s);
+});
+const glow = (color, scale, fog = true, opacity = 1) => {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog, opacity }));
+  s.scale.setScalar(scale); return s;
+};
+
+// ---------- niebo: gradient, gwiazdy, księżyc (podąża za kamerą) ----------
+const skyGroup = new THREE.Group(); scene.add(skyGroup);
+skyGroup.add(new THREE.Mesh(new THREE.SphereGeometry(600, 32, 16), new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, fog: false,
+  vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
+  fragmentShader: 'varying vec3 vP; void main(){ float h = clamp(vP.y, 0., 1.); gl_FragColor = vec4(mix(vec3(.20,.20,.36), vec3(.02,.03,.09), pow(h, .5)), 1.); }'
+})));
+{
+  const p = [];
+  for (let i = 0; i < 1500; i++) {
+    const th = Math.random() * Math.PI * 2, ph = Math.acos(0.05 + Math.random() * 0.95);
+    p.push(Math.sin(ph) * Math.cos(th) * 500, Math.cos(ph) * 500, Math.sin(ph) * Math.sin(th) * 500);
+  }
+  skyGroup.add(new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(p, 3)),
+    new THREE.PointsMaterial({ color: 0xffffff, size: 1.4, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.85 })));
+  const moonTex = canvasTex(128, (x, s) => {
+    x.fillStyle = '#eef1f8'; x.beginPath(); x.arc(s / 2, s / 2, s * 0.42, 0, 7); x.fill();
+    x.fillStyle = '#cfd6e6'; [[50, 52, 9], [76, 72, 7], [68, 40, 5]].forEach(([a, b, r]) => { x.beginPath(); x.arc(a, b, r, 0, 7); x.fill(); });
+  });
+  const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map: moonTex, fog: false, depthWrite: false }));
+  moon.scale.setScalar(26); moon.position.copy(MOON).multiplyScalar(450); skyGroup.add(moon);
+  const mg = glow(0x8fa6d8, 170, false, 0.55); mg.position.copy(moon.position); skyGroup.add(mg);
+}
+
+// ---------- światło ----------
+scene.add(new THREE.HemisphereLight(0x3a4a80, 0x141820, 0.9));
+const moonLight = new THREE.DirectionalLight(0x9db2e8, 0.7);
+moonLight.castShadow = true;
+moonLight.shadow.mapSize.set(2048, 2048);
+Object.assign(moonLight.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, near: 1, far: 200 });
+moonLight.shadow.bias = -0.0008;
+scene.add(moonLight, moonLight.target);
+
+// ---------- teren ----------
+{
+  const geo = new THREE.PlaneGeometry(140, 280, 70, 140);
+  geo.rotateX(-Math.PI / 2); geo.translate(0, 0, -100);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) pos.setY(i, hAt(pos.getX(i), pos.getZ(i)));
+  geo.computeVertexNormals();
+  const ground = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x0e1218, roughness: 1 }));
+  ground.receiveShadow = true; scene.add(ground);
+}
+// trawa (instancje)
+{
+  const geo = new THREE.ConeGeometry(0.025, 0.45, 3); geo.translate(0, 0.22, 0);
+  const n = 9000, grass = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0x1e2c36 }), n);
+  const o = new THREE.Object3D();
+  for (let i = 0; i < n; i++) {
+    const x = rnd(-24, 24), z = rnd(-215, 4);
+    o.position.set(x, hAt(x, z), z); o.rotation.set(rnd(-0.2, 0.2), rnd(0, 6.3), 0); o.scale.setScalar(rnd(0.6, 1.4));
+    o.updateMatrix(); grass.setMatrixAt(i, o.matrix);
+  }
+  grass.receiveShadow = true; scene.add(grass);
+}
+// sosny po bokach
+{
+  const n = 300, pines = new THREE.InstancedMesh(new THREE.ConeGeometry(1.6, 6, 7), new THREE.MeshStandardMaterial({ color: 0x0a0e14, roughness: 1 }), n);
+  const o = new THREE.Object3D();
+  for (let i = 0; i < n; i++) {
+    const behind = i > 260, x = behind ? rnd(-40, 40) : (Math.random() < 0.5 ? -1 : 1) * rnd(27, 60), z = behind ? rnd(-240, -218) : rnd(-215, 10), s = rnd(0.8, 1.8);
+    o.position.set(x, hAt(x, z) + 3 * s, z); o.scale.setScalar(s); o.rotation.y = rnd(0, 6.3);
+    o.updateMatrix(); pines.setMatrixAt(i, o.matrix);
+  }
+  scene.add(pines);
+}
+
+// ---------- mur Góry za plecami i Samotna Góra ----------
+{
+  const m = new THREE.MeshStandardMaterial({ color: 0x0c0e13, roughness: 1 });
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(70, 14, 3), m); wall.position.set(0, 7, 7); wall.castShadow = wall.receiveShadow = true; scene.add(wall);
+  for (let x = -34; x <= 34; x += 2.4) { const c = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.2, 3), m); c.position.set(x, 14.6, 7); scene.add(c); }
+  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 15, 5), new THREE.MeshStandardMaterial({ color: 0x6d5c3e }));
+  rope.position.set(1.2, 7.4, 5.4); rope.rotation.x = 0.08; scene.add(rope);
+  const mountain = new THREE.Mesh(new THREE.ConeGeometry(170, 140, 9), new THREE.MeshBasicMaterial({ color: 0x1a2136, fog: false }));
+  mountain.position.set(0, 55, 260); scene.add(mountain);
+  const gate = glow(0xffa050, 14, false, 0.8); gate.position.set(4, 4, 200); scene.add(gate);
+}
+
+// ---------- skały ----------
+const rocks = [], rockMeshes = [];
+const rockMat = new THREE.MeshStandardMaterial({ color: 0x1b1e26, roughness: 0.95, flatShading: true });
+function makeRock(x, z, r, big) {
+  const geo = new THREE.IcosahedronGeometry(r, 1), p = geo.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i);
+    v.multiplyScalar(1 + 0.25 * Math.sin(v.x * 3.1 + v.y * 5.3) * Math.cos(v.z * 4.7));
+    p.setXYZ(i, v.x, v.y * 0.75, v.z);
+  }
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, rockMat);
+  m.position.set(x, hAt(x, z) + r * 0.2, z); m.rotation.y = rnd(0, 6.3);
+  m.castShadow = m.receiveShadow = true; scene.add(m);
+  rocks.push({ x, z, r, big }); rockMeshes.push(m);
+}
+[[-5, -18, 2.2], [6, -26, 2.6], [-9, -36, 2.4], [3, -41, 2.0], [11, -53, 2.8], [-4, -58, 2.5], [-13, -68, 2.3], [7, -74, 2.6],
+ [0, -86, 2.2], [-10, -92, 2.7], [12, -104, 2.4], [-3, -112, 2.6], [8, -124, 2.2], [-12, -132, 2.5], [3, -140, 2.8],
+ [13, -152, 2.3], [-6, -160, 2.6], [5, -172, 2.4]].forEach(([x, z, r]) => makeRock(x, z, r, true));
+for (let i = 0; i < 60; i++) makeRock(rnd(-23, 23), rnd(-180, -8), rnd(0.3, 0.8), false);
+
+// ---------- elfy-strażnicy ----------
+const coneGeo = (() => {
+  const L = 11, g = new THREE.ConeGeometry(Math.tan(CONE_A) * L, L, 32, 1, true);
+  g.translate(0, -L / 2, 0); g.rotateX(-Math.PI / 2); return g;
+})();
+const coneMatBase = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  uniforms: { uOn: { value: 1 } },
+  vertexShader: 'varying float vZ; void main(){ vZ = position.z; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
+  fragmentShader: 'uniform float uOn; varying float vZ; void main(){ float a = pow(1. - clamp(vZ / 11., 0., 1.), 1.6) * .16 * uOn; gl_FragColor = vec4(1., .75, .45, a); }'
+});
+const ELF_H = 1.95;   // wzrost elfa [m]
+const elfScale = (() => {   // skala z wysokości kości głowy (Box3 dla siatek ze szkieletem bywa błędny)
+  elfGltf.scene.updateMatrixWorld(true);
+  const head = elfGltf.scene.getObjectByName('Head').getWorldPosition(new THREE.Vector3());
+  return ELF_H / (head.y * 1.12);
+})();
+const clip = n => elfGltf.animations.find(a => a.name.endsWith('|' + n));
+const wristPos = new THREE.Vector3();
+
+function makeElf(shadows) {
+  const g = new THREE.Group();
+  const model = SkeletonUtils.clone(elfGltf.scene);
+  model.scale.setScalar(elfScale);
+  model.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  g.add(model);
+  const wrist = model.getObjectByName('WristL');
+  const mixer = new THREE.AnimationMixer(model);
+  const act = { walk: mixer.clipAction(clip('Walk')), idle: mixer.clipAction(clip('Idle')), alert: mixer.clipAction(clip('Idle_Sword')) };
+  act.idle.play();
+
+  // latarnia w lewej dłoni: lampa, poświata, światło punktowe, reflektor i widoczny snop
+  const lampG = new THREE.Group(); g.add(lampG);
+  const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.17, 0.12), new THREE.MeshStandardMaterial({ color: 0x221a10, emissive: 0xffa040, emissiveIntensity: 3 }));
+  lampG.add(lamp);
+  const pl = new THREE.PointLight(0xffa84d, 4, 8, 2); lampG.add(pl);
+  const halo = glow(0xffa040, 1.3, true, 0.9); lampG.add(halo);
+  const spot = new THREE.SpotLight(0xffc27a, 40, 26, CONE_A, 0.45, 1);
+  spot.target.position.set(0, -1.1, 6);
+  spot.castShadow = shadows;
+  if (shadows) { spot.shadow.mapSize.set(512, 512); spot.shadow.camera.near = 0.3; spot.shadow.camera.far = 26; spot.shadow.bias = -0.002; }
+  lampG.add(spot, spot.target);
+  const coneMat = coneMatBase.clone();
+  const cone = new THREE.Mesh(coneGeo, coneMat); cone.rotation.x = Math.atan2(1.1, 6); lampG.add(cone);
+  scene.add(g);
+  return { g, lamp, lampG, wrist, spot, coneMat, mixer, act, cur: act.idle, alert: 0, yaw: 0 };
+}
+function playAct(g, name) {
+  const a = g.act[name]; if (g.cur === a) return;
+  a.reset().play(); g.cur.crossFadeTo(a, 0.25, false); g.cur = a;
+}
+function animateElf(g, dt) {
+  g.mixer.update(dt);
+  g.g.updateMatrixWorld(true);
+  g.wrist.getWorldPosition(wristPos);
+  g.g.worldToLocal(wristPos);
+  g.lampG.position.set(wristPos.x, wristPos.y - 0.12, Math.max(wristPos.z, 0.25));
+}
+
+const guards = [
+  { z: -47, x1: -16, x2: 16, speed: 1.6, sx: -16, sdir: 1 },
+  { z: -98, x1: -17, x2: 17, speed: 1.9, sx: 17, sdir: -1 },
+  { z: -146, x1: -16, x2: 16, speed: 1.75, sx: -4, sdir: 1 },
+].map(p => Object.assign(makeElf(true), p));
+const campGuards = [
+  { x: -2.4, z: -198.5, yaw0: Math.PI / 2 },
+  { x: 2.6, z: -197, yaw0: -Math.PI / 2 },
+].map(p => Object.assign(makeElf(false), p));
+
+const walkYaw = d => (d > 0 ? Math.PI / 2 : -Math.PI / 2);
+function updateGuard(g, dt) {
+  let yaw;
+  if (g.state === 'listen') {
+    // usłyszał podbiegającego Bilba: staje i obraca się w stronę dźwięku
+    playAct(g, 'alert'); g.t += dt;
+    yaw = g.yaw + Math.atan2(Math.sin(Math.atan2(g.lx - g.x, g.lz - g.z) - g.yaw), Math.cos(Math.atan2(g.lx - g.x, g.lz - g.z) - g.yaw)) * (1 - Math.exp(-6 * dt));
+    if (g.t >= LISTEN_TIME) g.state = 'walk';
+  } else if (g.state === 'walk') {
+    playAct(g, 'walk');
+    g.x += g.dir * g.speed * dt; yaw = walkYaw(g.dir);
+    if ((g.dir > 0 && g.x >= g.x2) || (g.dir < 0 && g.x <= g.x1)) { g.x = clamp(g.x, g.x1, g.x2); g.state = 'look'; g.t = 0; }
+  } else {
+    // na końcu trasy: odwraca się w stronę Góry (skąd idzie Bilbo), rozgląda się i zawraca
+    playAct(g, 'idle');
+    g.t += dt; const a = walkYaw(g.dir), sweepEnd = Math.sin(1.6 * 2.4) * 0.55;
+    if (g.t < 0.6) yaw = lerp(a, 0, g.t / 0.6);
+    else if (g.t < 2.2) yaw = Math.sin((g.t - 0.6) * 2.4) * 0.55;
+    else yaw = lerp(sweepEnd, -a, Math.min(1, (g.t - 2.2) / 0.6));
+    if (g.t >= 2.8) { g.dir *= -1; g.state = 'walk'; }
+  }
+  g.yaw = yaw; g.g.rotation.y = yaw;
+  g.g.position.set(g.x, hAt(g.x, g.z), g.z);
+}
+
+// ---------- obóz: namioty i ognisko ----------
+const fire = {};
+{
+  const m = new THREE.MeshStandardMaterial({ color: 0x1a1410, roughness: 1 });
+  [[-7, -204, 2.4], [7, -207, 2.8], [0, -214, 3.2]].forEach(([x, z, s]) => {
+    const t = new THREE.Mesh(new THREE.ConeGeometry(s, s * 1.3, 4), m);
+    t.position.set(x, hAt(x, z) + s * 0.65, z); t.rotation.y = Math.PI / 4; t.castShadow = t.receiveShadow = true; scene.add(t);
+  });
+  const y0 = hAt(FIRE.x, FIRE.z);
+  [0.6, -0.6].forEach(r => { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.1, 6), m); l.position.set(FIRE.x, y0 + 0.1, FIRE.z); l.rotation.set(Math.PI / 2, r, 0); scene.add(l); });
+  fire.light = new THREE.PointLight(0xff7a2a, 30, 35, 1.5); fire.light.position.set(FIRE.x, y0 + 0.8, FIRE.z); scene.add(fire.light);
+  fire.flame = glow(0xff9a40, 1.6); fire.flame.position.set(FIRE.x, y0 + 0.45, FIRE.z); scene.add(fire.flame);
+  const beacon = glow(0xff6a20, 9, false, 0.35); beacon.position.set(FIRE.x, y0 + 1, FIRE.z); scene.add(beacon); // widoczny z daleka mimo mgły
+  const n = 120, pos = new Float32Array(n * 3);
+  fire.sparks = Array.from({ length: n }, () => ({ life: Math.random() }));
+  fire.geo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  scene.add(new THREE.Points(fire.geo, new THREE.PointsMaterial({ color: 0xffb060, size: 0.035, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })));
+  fire.y0 = y0;
+}
+function updateFire(dt, t) {
+  fire.light.intensity = 26 + Math.sin(t * 13) * 3 + Math.sin(t * 29) * 2;
+  fire.flame.scale.set(1.4 + Math.sin(t * 17) * 0.15, 1.9 + Math.sin(t * 11) * 0.25, 1);
+  const p = fire.geo.attributes.position;
+  fire.sparks.forEach((s, i) => {
+    s.life += dt * (0.6 + (i % 5) * 0.12);
+    if (s.life > 1) { s.life = 0; s.x = rnd(-0.25, 0.25); s.z = rnd(-0.25, 0.25); s.vx = rnd(-0.9, 0.9); s.vz = rnd(-0.9, 0.9); }
+    p.setXYZ(i, FIRE.x + (s.x || 0) + (s.vx || 0) * s.life, fire.y0 + 0.3 + s.life * 3, FIRE.z + (s.z || 0) + (s.vz || 0) * s.life);
+  });
+  p.needsUpdate = true;
+}
+
+// ---------- gracz: Bilbo + kamera za plecami ----------
+const bilbo = new THREE.Group(); scene.add(bilbo);
+const bModel = bilboGltf.scene;
+// wzrost liczony od czubka głowy (kość Head_end); szerszy w barach i biodrach = krępa sylwetka
+bModel.updateMatrixWorld(true);
+const bK = BILBO_H / bModel.getObjectByName('Head_end').getWorldPosition(new THREE.Vector3()).y;
+bModel.scale.set(bK * 1.15, bK, bK * 1.15);
+// klasyczne kolory Bilba; "Boots" w kolorze skóry = bose stopy
+const HOBBIT_COLORS = { Shirt: 0x8e2a1e, UnderShirt: 0xe8dcc0, Pants: 0x6a4a2a, Boots: 0xe0ac85, Hair: 0x5a3518 };
+const bFeet = ['FootL', 'FootR'].map(n => bModel.getObjectByName(n));
+const bMats = [];
+bModel.traverse(o => {
+  if (!o.isMesh) return;
+  o.castShadow = true; o.frustumCulled = false;
+  o.material = o.material.clone(); o.material.transparent = true; bMats.push(o.material);
+  const c = HOBBIT_COLORS[o.material.name]; if (c !== undefined) o.material.color.setHex(c);
+  o.material.emissive.copy(o.material.color).multiplyScalar(BILBO_GLOW);   // własna poświata: czytelny w każdym cieniu
+});
+bilbo.add(bModel);
+// chłodne światło od strony kamery: Bilbo jest zawsze czytelny, także w cieniu skały (gra, nie fizyka)
+const bFill = new THREE.PointLight(0xa8bcf0, 14, 7, 1.8); scene.add(bFill);
+const bMixer = new THREE.AnimationMixer(bModel);
+const bClip = n => bilboGltf.animations.find(a => a.name === n);
+const bAct = { idle: bMixer.clipAction(bClip('Idle')), walk: bMixer.clipAction(bClip('Walk')), run: bMixer.clipAction(bClip('Run')), hit: bMixer.clipAction(bClip('RecieveHit')) };
+bAct.walk.timeScale = 0.8; bAct.run.timeScale = 1.1;
+// skradanie = wolniejszy, spokojny chód (paczka nie ma animacji skradania)
+let running = false;
+bAct.hit.setLoop(THREE.LoopOnce); bAct.hit.clampWhenFinished = true;
+let bCur = bAct.idle; bCur.play();
+function bPlay(name) { const a = bAct[name]; if (bCur === a) return; a.reset().play(); bCur.crossFadeTo(a, 0.2, false); bCur = a; }
+
+const keys = new Set();
+const player = new THREE.Vector3();
+let state = 'intro', ring = 1, katar = 0, ringOn = false, shake = 0, tipsShown = 0, endLook = null;
+let camYaw = 0, camPitch = 0.28, bYaw = Math.PI;   // Bilbo patrzy w stronę -z (do obozu)
+
+function setRing(on) {
+  ringOn = on;
+  renderer.domElement.style.filter = on ? 'grayscale(.85) brightness(1.2) contrast(1.1)' : '';
+  $('vigRing').style.opacity = on ? 1 : 0;
+  bMats.forEach(m => { m.opacity = on ? 0.18 : 1; m.depthWrite = !on; });
+}
+function say(who, text, ms) {
+  const el = $('say'); el.innerHTML = `<b>${who}</b>${text}`; el.style.opacity = 1;
+  clearTimeout(say.t); say.t = setTimeout(() => (el.style.opacity = 0), ms);
+}
+function tip(text) { const el = $('tip'); el.textContent = text; el.style.opacity = 1; clearTimeout(tip.t); tip.t = setTimeout(() => (el.style.opacity = 0), 6000); }
+function center(title, sub) { $('title').textContent = title; $('sub').textContent = sub; }
+
+let timers = [];
+function reset() {
+  timers.forEach(clearTimeout); timers = [];
+  player.set(0, 0, 0); running = false; camYaw = 0; camPitch = 0.28; bYaw = Math.PI; bPlay('idle');
+  ring = 1; katar = 0; setRing(false); shake = 0; tipsShown = 0; endLook = null;
+  guards.forEach(g => Object.assign(g, { x: g.sx, dir: g.sdir, state: 'walk', t: 0, alert: 0 }));
+  campGuards.forEach(g => { playAct(g, 'idle'); g.yaw = g.yaw0; g.turn = false; g.coneMat.uniforms.uOn.value = 0; g.spot.intensity = 0; g.g.rotation.y = g.yaw0; g.g.position.set(g.x, hAt(g.x, g.z), g.z); });
+  center('', ''); $('mark').textContent = ''; $('vigAlert').style.opacity = 0; $('fade').style.opacity = 0; $('say').style.opacity = 0;
+}
+
+function fail(title, sub) {
+  state = 'fail'; setRing(false); shake = 0.15; bPlay('hit');
+  $('vigAlert').style.opacity = 1; center(title, sub);
+  timers.push(setTimeout(() => { reset(); state = 'play'; }, 2200));
+}
+
+function ending() {
+  state = 'end'; setRing(false); $('mark').textContent = ''; bPlay('idle');
+  const cg = campGuards[0];
+  const at = (ms, f) => timers.push(setTimeout(f, ms));
+  endLook = cg;
+  at(300, () => say('Bilbo', 'A… a…', 1000));
+  at(1500, () => { say('Bilbo', 'A-PSIK!', 900); shake = 0.08; bPlay('hit'); });
+  at(2500, () => { bPlay('idle'); cg.turn = true; playAct(cg, 'alert'); cg.coneMat.uniforms.uOn.value = 1; cg.spot.intensity = 40; $('mark').textContent = '!'; });
+  at(3000, () => say('Strażnik', 'Kto tam?!', 1600));
+  at(4800, () => { $('mark').textContent = ''; say('Bilbo', 'Zaprowadźcie mnie do Barda. Mam dla niego coś bardzo cennego.', 2800); });
+  at(7800, () => ($('fade').style.opacity = 1));
+  at(9200, () => { center('Koniec dema', 'Dalej: Bilbo oddaje Arcyklejnot Bardowi.\n\nR — zagraj jeszcze raz'); document.exitPointerLock(); });
+}
+
+// ---------- wejście: mysz obraca kamerę wokół Bilba ----------
+const canvas = renderer.domElement;
+const lock = () => canvas.requestPointerLock();
+$('overlay').addEventListener('click', lock);
+document.addEventListener('pointerlockchange', () => {
+  if (document.pointerLockElement === canvas) {
+    $('overlay').style.display = 'none';
+    if (state === 'intro' || state === 'paused') state = 'play';
+  } else if (state === 'play') {
+    state = 'paused';
+    $('overlay').querySelector('h1').textContent = 'Pauza';
+    $('overlay').querySelector('p').textContent = '';
+    $('overlay').querySelector('.go').textContent = 'Kliknij, aby wrócić';
+    $('overlay').style.display = 'flex';
+  }
+});
+document.addEventListener('mousemove', e => {
+  if (document.pointerLockElement !== canvas || state === 'end') return;
+  camYaw -= e.movementX * 0.0025;
+  camPitch = clamp(camPitch + e.movementY * 0.0022, -0.1, 1.1);
+});
+addEventListener('keydown', e => {
+  keys.add(e.code);
+  if (e.repeat) return;
+  if (e.code === 'KeyR' && state !== 'intro') { reset(); state = 'play'; if (document.pointerLockElement !== canvas) lock(); }
+  if (e.code === 'KeyE' && state === 'play') setRing(!ringOn && ring > 0.05);
+});
+addEventListener('keyup', e => keys.delete(e.code));
+
+// ---------- detekcja (cel: tułów Bilba) ----------
+const ray = new THREE.Raycaster(), lp = new THREE.Vector3(), dir = new THREE.Vector3(), chest = new THREE.Vector3();
+function look(g) {
+  g.lamp.getWorldPosition(lp);
+  chest.set(player.x, hAt(player.x, player.z) + BILBO_H * 0.6, player.z);
+  dir.subVectors(chest, lp);
+  const d = dir.length(); if (d > SEE_DIST) return { seen: false };
+  dir.divideScalar(d);
+  const hl = Math.hypot(dir.x, dir.z) || 1;
+  if ((Math.sin(g.yaw) * dir.x + Math.cos(g.yaw) * dir.z) / hl < Math.cos(CONE_A)) return { seen: false };
+  ray.set(lp, dir); ray.far = d;
+  return { seen: ray.intersectObjects(rockMeshes, false).length === 0, d };
+}
+
+// ---------- pętla ----------
+const clock = new THREE.Clock();
+const camTarget = new THREE.Vector3(), camWant = new THREE.Vector3(), camRay = new THREE.Raycaster();
+const angLerp = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * k;
+reset();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+  guards.forEach(g => state !== 'fail' && updateGuard(g, dt));
+  [...guards, ...campGuards].forEach(g => animateElf(g, state === 'fail' ? 0 : dt));
+  bMixer.update(dt);
+  bFeet.forEach(f => f.scale.setScalar(1.6));   // duże hobbickie stopy (animacje nie zmieniają skali kości)
+  updateFire(dt, t);
+
+  if (state === 'play') {
+    const f = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0);
+    const r = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
+    if (f || r) {
+      // kierunek ruchu względem kamery; Bilbo obraca się płynnie w stronę ruchu
+      const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw), len = Math.hypot(f, r);
+      const mx = (fx * f - fz * r) / len, mz = (fz * f + fx * r) / len;
+      running = keys.has('ShiftLeft') || keys.has('ShiftRight');
+      const sp = running ? RUN : SNEAK;
+      player.x += mx * sp * dt; player.z += mz * sp * dt;
+      bYaw = angLerp(bYaw, Math.atan2(mx, mz), 1 - Math.exp(-12 * dt));
+      bPlay(running ? 'run' : 'walk');
+    } else { running = false; bPlay('idle'); }
+    player.x = clamp(player.x, -24, 24); player.z = clamp(player.z, -205, 3);
+    for (const k of [...rocks, ...guards.map(g => ({ x: g.x, z: g.z, r: 0.35 }))]) {
+      const dx = player.x - k.x, dz = player.z - k.z, d = Math.hypot(dx, dz), m = k.r * 0.95 + 0.3;
+      if (d < m && d > 0) { player.x = k.x + dx / d * m; player.z = k.z + dz / d * m; }
+    }
+  }
+  bilbo.position.set(player.x, hAt(player.x, player.z), player.z);
+  bilbo.rotation.y = bYaw;
+
+  if (state === 'play') {
+    const nearRock = rocks.some(k => k.big && Math.hypot(player.x - k.x, player.z - k.z) < k.r + 1.8);
+    if (ringOn) { ring -= dt / RING_TIME; if (ring <= 0) { ring = 0; setRing(false); } }
+    else if (nearRock) ring = Math.min(1, ring + dt / RING_RECHARGE);
+    katar = clamp(katar + (nearRock ? -KATAR_DOWN : KATAR_UP * (running ? RUN_KATAR : 1)) * dt, 0, 1);
+    $('status').textContent = nearRock ? '● Przy skale — odpoczywasz' : running ? '● Podbiegasz — hałas i zadyszka: strażnicy w pobliżu cię usłyszą' : '';
+    if (player.z < -12 && tipsShown === 0) { tipsShown = 1; tip('Przy skale odpoczywasz: pierścień się ładuje, a katar maleje.'); }
+    if (player.z < -30 && tipsShown === 1) { tipsShown = 2; tip('Latarnia widzi daleko, ale skała zasłania cię przed jej światłem. E — załóż pierścień.'); }
+
+    if (katar >= 1) fail('A-PSIK!', 'Strażnicy usłyszeli kichnięcie.\nWracasz na początek etapu…');
+    else {
+      let maxA = 0, sus = false;
+      for (const g of guards) {
+        if (running && Math.hypot(g.x - player.x, g.z - player.z) < NOISE_R) Object.assign(g, { state: 'listen', t: 0, lx: player.x, lz: player.z });
+        if (g.state === 'listen') sus = true;
+        const v = look(g);
+        if (v.seen && !ringOn) g.alert += dt * (v.d < 8 ? 2 : 1); else g.alert = Math.max(0, g.alert - dt * 0.5);
+        if (v.seen && ringOn) sus = true;
+        maxA = Math.max(maxA, g.alert);
+      }
+      $('vigAlert').style.opacity = Math.min(1, maxA / ALERT_MAX);
+      $('mark').textContent = maxA > 0.05 ? '!' : sus ? '?' : '';
+      if (maxA >= ALERT_MAX) fail('Strażnik cię zauważył!', 'Wracasz na początek etapu…');
+      else if (player.z < END_Z) ending();
+    }
+  }
+
+  if (state === 'end' && endLook) {
+    // scenka: Bilbo odwraca się do strażnika, kamera płynnie ustawia się za Bilbem
+    const cg = endLook, toG = Math.atan2(cg.x - player.x, cg.z - player.z);
+    bYaw = angLerp(bYaw, toG, 1 - Math.exp(-3 * dt)); bilbo.rotation.y = bYaw;
+    camYaw = angLerp(camYaw, toG + Math.PI, 1 - Math.exp(-2 * dt));
+    camPitch = lerp(camPitch, 0.15, 1 - Math.exp(-2 * dt));
+    if (cg.turn) { cg.yaw = angLerp(cg.yaw, Math.atan2(player.x - cg.x, player.z - cg.z), 1 - Math.exp(-4 * dt)); cg.g.rotation.y = cg.yaw; }
+  }
+
+  // kamera za plecami; skała między Bilbem a kamerą przybliża kamerę
+  camTarget.set(player.x, hAt(player.x, player.z) + BILBO_H * 1.05, player.z);
+  const back = new THREE.Vector3(Math.sin(camYaw) * Math.cos(camPitch), Math.sin(camPitch), Math.cos(camYaw) * Math.cos(camPitch));
+  camRay.set(camTarget, back); camRay.far = CAM_DIST;
+  const hit = camRay.intersectObjects(rockMeshes, false)[0];
+  const dist = hit ? Math.max(0.6, hit.distance - 0.3) : CAM_DIST;
+  camWant.copy(camTarget).addScaledVector(back, dist);
+  camWant.y = Math.max(camWant.y, hAt(camWant.x, camWant.z) + 0.3);
+  camera.position.copy(camWant).add(new THREE.Vector3(rnd(-shake, shake), rnd(-shake, shake), 0));
+  camera.lookAt(camTarget);
+  bFill.position.copy(camTarget).addScaledVector(back, 1.8).y += 0.9;
+  shake = Math.max(0, shake - dt * 0.6);
+
+  $('ringBar').firstChild.style.width = ring * 100 + '%';
+  $('katarBar').firstChild.style.width = katar * 100 + '%';
+  $('katarBar').classList.toggle('warn', katar > 0.75);
+
+  skyGroup.position.copy(camera.position);
+  moonLight.position.copy(player).addScaledVector(MOON, 80);
+  moonLight.target.position.copy(player);
+  renderer.render(scene, camera);
+});
+
+// do testów z konsoli
+window.G = { get state() { return state; }, start() { $('overlay').style.display = 'none'; state = 'play'; }, tp(x, z, yaw = 0) { player.set(x, 0, z); camYaw = yaw; }, guards, setRing, bModel };
+</script>
+</body>
+</html>

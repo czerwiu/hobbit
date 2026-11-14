@@ -1,0 +1,3781 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hobbit: Bitwa Pięciu Armii</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: Cinzel, Georgia, serif; color: #e9dcb8; user-select: none; -webkit-user-select: none; }
+  canvas { display: block; transition: filter .35s; }
+  .layer { position: fixed; inset: 0; pointer-events: none; }
+  .hidden { display: none !important; }
+  button { font-family: Cinzel, Georgia, serif; font-size: 20px; color: #f3e6c4; background: rgba(20,16,10,.75); border: 1px solid #8a7a50; padding: 10px 28px; cursor: pointer; min-width: 220px; transition: background .2s, color .2s; }
+  button:hover, button:focus-visible { background: rgba(120,90,30,.6); color: #fff; outline: none; }
+  #vigRing { background: radial-gradient(ellipse at center, transparent 35%, rgba(40,30,5,.55) 75%, rgba(0,0,0,.9) 100%); opacity: 0; transition: opacity .35s; }
+  #vigAlert { background: radial-gradient(ellipse at center, transparent 40%, rgba(170,20,10,.75) 100%); opacity: 0; }
+  #fade { background: #000; opacity: 0; transition: opacity .8s; z-index: 20; }
+  #plansza { position: fixed; inset: 0; background: #000 center / contain no-repeat; z-index: 5; }
+  #hud { position: fixed; top: 22px; left: 26px; font-size: 15px; pointer-events: none; }
+  .row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .row span { width: 96px; }
+  .bar { width: 220px; height: 10px; background: rgba(0,0,0,.55); border: 1px solid #6b6550; position: relative; }
+  .bar i { display: block; height: 100%; width: 0; }
+  #ringBar i { background: #e8c25a; }
+  #katarBar i { background: #7fbf6a; }
+  #speedBar i { background: #9fb3e0; }
+  #speedBar::after { content: ''; position: absolute; right: 0; top: -1px; bottom: -1px; width: 28%; background: rgba(200,40,30,.45); }
+  #katarBar.warn i, #speedBar.warn i { animation: blink .4s steps(2) infinite; }
+  @keyframes blink { 0% { background: #d2463a; } 100% { background: #8a2a22; } }
+  #status { color: #9fb3e0; font-size: 14px; min-height: 18px; }
+  #counter { position: fixed; top: 20px; right: 28px; font-size: 26px; color: #f3e6c4; text-shadow: 0 2px 8px #000; pointer-events: none; }
+  #cross { position: fixed; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; pointer-events: none; }
+  #cross::before, #cross::after { content: ''; position: absolute; background: rgba(255,240,200,.85); box-shadow: 0 0 3px #000; }
+  #cross::before { left: 12px; top: 0; width: 2px; height: 26px; }
+  #cross::after { top: 12px; left: 0; height: 2px; width: 26px; }
+  #cross.aim { transform: scale(.6); }
+  #mark { position: fixed; top: 16%; left: 50%; transform: translateX(-50%); font-size: 56px; color: #ffd27a; text-shadow: 0 0 12px #000; pointer-events: none; }
+  #tip { position: fixed; top: 24%; left: 50%; transform: translateX(-50%); width: min(680px, 90vw); text-align: center; font-size: 18px; color: #c4cee8; text-shadow: 0 2px 6px #000; opacity: 0; transition: opacity .6s; pointer-events: none; }
+  #say { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); max-width: min(760px, 90vw); padding: 12px 20px; background: rgba(5,6,10,.8); border: 1px solid #4a4536; font-family: Georgia, serif; font-size: 20px; color: #f3e6c4; text-align: center; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  #say b, #dlg b { color: #e8c25a; font-family: Cinzel, Georgia, serif; font-weight: 600; }
+  #say b { margin-right: 8px; }
+  #center { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; padding: 0 16px; }
+  #center h1 { font-size: 46px; margin: 0 0 14px; text-shadow: 0 3px 10px #000; }
+  #center p { font-size: 20px; margin: 0; line-height: 1.6; color: #cfc4a6; text-shadow: 0 2px 6px #000; white-space: pre-line; }
+  #keys { position: fixed; bottom: 18px; width: 100%; text-align: center; font-size: 15px; color: #b9b09a; opacity: .8; pointer-events: none; }
+  #dlg { position: fixed; left: 50%; bottom: 36px; transform: translateX(-50%); width: min(900px, calc(100vw - 32px)); box-sizing: border-box; padding: 16px 24px 30px; background: linear-gradient(rgba(8,8,14,.88), rgba(4,4,8,.94)); border: 1px solid #6b5f3c; box-shadow: 0 6px 30px rgba(0,0,0,.6); z-index: 10; cursor: pointer; }
+  #dlg b { display: block; font-size: 17px; margin-bottom: 6px; letter-spacing: .5px; }
+  #dlg p { margin: 0; font-family: Georgia, serif; font-size: 21px; line-height: 1.55; color: #f3e6c4; }
+  #dlg p.narr { font-style: italic; color: #d8cfb6; }
+  #dlg small { position: absolute; right: 16px; bottom: 8px; font-size: 12px; color: #a99c78; animation: pulse 1.4s infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 16px; box-sizing: border-box; z-index: 15; }
+  .screen h1 { font-size: clamp(30px, 6vw, 60px); margin: 0 0 10px; text-shadow: 0 4px 18px #000; color: #f0d890; }
+  .screen h2 { font-size: clamp(18px, 3vw, 26px); margin: 0 0 30px; color: #cfc4a6; font-weight: 600; text-shadow: 0 2px 8px #000; }
+  .screen p { font-family: Georgia, serif; font-size: 20px; line-height: 1.6; color: #e8dcc0; max-width: 780px; margin: 0 0 24px; white-space: pre-line; text-shadow: 0 2px 6px #000; }
+  .screen .btns { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+  .screen .btns.row2 { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+  #menu { background: radial-gradient(ellipse at center, rgba(0,0,0,.05) 30%, rgba(0,0,0,.65) 100%); }
+  #info { background: rgba(0,0,0,.82); }
+  #info .box { max-width: 820px; max-height: 70vh; overflow: auto; text-align: left; font-family: Georgia, serif; font-size: 17px; line-height: 1.55; color: #e8dcc0; margin-bottom: 22px; padding: 0 8px; }
+  #info .box h3 { font-family: Cinzel, Georgia, serif; color: #e8c25a; margin: 18px 0 6px; font-size: 19px; }
+  #info .box ul { margin: 4px 0; padding-left: 22px; }
+  #info .box a { color: #9fb3e0; }
+  #choice { background: rgba(0,0,0,.55); }
+  #choice p { font-size: 24px; }
+  #card { background: rgba(0,0,0,.72); cursor: pointer; }
+  #card .go, #overlay .go { font-size: 20px; color: #e8c25a; margin-top: 8px; animation: pulse 1.6s infinite; }
+  #ending { background: #050508; }
+  #ending p { font-size: 24px; font-style: italic; }
+  #overlay { background: rgba(0,0,0,.62); cursor: pointer; }
+  #overlay .keys2 { font-size: 15px; color: #b9b09a; margin-bottom: 18px; }
+  #loading { background: #000; z-index: 30; }
+  #loading .bar { width: 320px; margin-top: 16px; }
+  #loading .bar i { background: #e8c25a; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script src="models/adventurer.js"></script>
+<script src="models/arrow.js"></script>
+<script src="models/bilbo.js"></script>
+<script src="models/bow.js"></script>
+<script src="models/elf.js"></script>
+<script src="models/king.js"></script>
+<script src="models/orc.js"></script>
+<script src="models/wolf.js"></script>
+<script src="sounds/amb_battle.js"></script>
+<script src="sounds/amb_fire.js"></script>
+<script src="sounds/amb_night.js"></script>
+<script src="sounds/amb_river.js"></script>
+<script src="sounds/amb_rope.js"></script>
+<script src="sounds/arrow_hit.js"></script>
+<script src="sounds/bow.js"></script>
+<script src="sounds/bow2.js"></script>
+<script src="sounds/clash.js"></script>
+<script src="sounds/clash2.js"></script>
+<script src="sounds/fall.js"></script>
+<script src="sounds/goblin_death.js"></script>
+<script src="sounds/goblin_snarl.js"></script>
+<script src="sounds/howl.js"></script>
+<script src="sounds/land.js"></script>
+<script src="sounds/music_main.js"></script>
+<script src="sounds/music_sad.js"></script>
+<script src="sounds/ring.js"></script>
+<script src="sounds/rope_slide.js"></script>
+<script src="sounds/snarl.js"></script>
+<script src="sounds/sneeze.js"></script>
+<script src="sounds/sneeze2.js"></script>
+<script src="sounds/sniff.js"></script>
+<script src="sounds/splash.js"></script>
+<script src="sounds/step_grass_0.js"></script>
+<script src="sounds/step_grass_1.js"></script>
+<script src="sounds/step_grass_2.js"></script>
+<script src="sounds/step_grass_3.js"></script>
+<script src="sounds/step_grass_4.js"></script>
+<script src="sounds/step_leaves_0.js"></script>
+<script src="sounds/step_leaves_1.js"></script>
+<script src="sounds/step_leaves_2.js"></script>
+<script src="sounds/step_leaves_3.js"></script>
+<script src="sounds/step_leaves_4.js"></script>
+<script src="sounds/step_stone_0.js"></script>
+<script src="sounds/step_stone_1.js"></script>
+<script src="sounds/step_stone_2.js"></script>
+<script src="sounds/swing.js"></script>
+<script src="sounds/swing2.js"></script>
+<script src="sounds/thump.js"></script>
+<script src="assets/plansze/lista.js"></script>
+</head>
+<body>
+<div id="game"></div>
+<div id="plansza" class="hidden"></div>
+<div id="vigRing" class="layer"></div>
+<div id="vigAlert" class="layer"></div>
+<div id="hud" class="hidden">
+  <div class="row" id="ringRow"><span>Pierścień</span><div class="bar" id="ringBar"><i></i></div></div>
+  <div class="row" id="katarRow"><span>Katar</span><div class="bar" id="katarBar"><i></i></div></div>
+  <div class="row" id="speedRow"><span>Prędkość</span><div class="bar" id="speedBar"><i></i></div></div>
+  <div id="status"></div>
+</div>
+<div id="counter" class="hidden"></div>
+<div id="cross" class="hidden"></div>
+<div id="mark"></div>
+<div id="tip"></div>
+<div id="say"></div>
+<div id="center"><h1 id="title"></h1><p id="sub"></p></div>
+<div id="keys" class="hidden"></div>
+<div id="dlg" class="hidden"><b id="dlgWho"></b><p id="dlgText"></p><small>kliknij lub Spacja — dalej</small></div>
+
+<div id="menu" class="screen hidden">
+  <h1>Hobbit</h1>
+  <h2>Bitwa Pięciu Armii</h2>
+  <div class="btns">
+    <button id="bStart">Start</button>
+    <button id="bHow">Jak grać</button>
+    <button id="bCredits">Autorzy</button>
+  </div>
+</div>
+<div id="info" class="screen hidden"><h1 id="infoTitle"></h1><div class="box" id="infoBox"></div><button id="bBack">Wróć</button></div>
+<div id="choice" class="screen hidden"><h1>Wybór Bilba</h1><p id="choiceQ"></p><div class="btns row2"><button id="bYes">TAK</button><button id="bNo">NIE</button></div></div>
+<div id="card" class="screen hidden"><h1 id="cardTitle"></h1><p id="cardText"></p><div class="go">Kliknij, aby kontynuować</div></div>
+<div id="overlay" class="screen hidden"><h1 id="ovTitle"></h1><p id="ovText"></p><div class="keys2" id="ovKeys"></div><div class="go" id="ovGo"></div><div class="btns row2" id="ovBtns" style="margin-top:18px"><button id="bMenu2">Menu główne</button></div></div>
+<div id="ending" class="screen hidden"><h1 id="endTitle"></h1><p id="endText"></p><div class="btns row2"><button id="bAgain">Zagraj jeszcze raz</button><button id="bMenu">Menu</button></div></div>
+<div id="loading" class="screen"><h1>Hobbit</h1><h2>Wczytywanie…</h2><div class="bar"><i id="loadBar"></i></div></div>
+<div id="fade" class="layer"></div>
+
+<script>window.CREDITS_MD = "# Autorzy i licencje\n\n## Gra\n\n- Scenariusz, projekt i kod gry: autor projektu szkolnego (na podstawie powieści J.R.R. Tolkiena „Hobbit, czyli tam i z powrotem”).\n- Kod przygotowany z pomocą Claude (Anthropic).\n\n## Modele 3D\n\nWszystkie modele: autor **Quaternius** (quaternius.com), licencja **CC0 1.0 (domena publiczna)**, pobrane z poly.pizza.\n\n| Model | Rola w grze | Link |\n|---|---|---|\n| Character Animated (Rogue) | Bilbo (przerobiony w kodzie na hobbita) | https://poly.pizza/m/DgOCW9ZCRJ |\n| Hooded Adventurer | elfy, elfi strażnicy | https://poly.pizza/m/y9KWOVG21R |\n| King | Thorin, Dáin, Król Leśnych Elfów | https://poly.pizza/m/I1gTjmuK2m |\n| Adventurer | krasnoludy, Bard, ludzie z Miasta na Jeziorze | https://poly.pizza/m/5EGWBMpuXq |\n| Orc | gobliny | https://poly.pizza/m/5vO2YJsPEf |\n| Wolf | wargi | https://poly.pizza/m/P1gU3Qkr9r |\n| Wooden Bow | łuk Barda i goblinów | https://poly.pizza/m/QnpqjLSKFU |\n| Arrow | strzały | https://poly.pizza/m/Rt48KEPDGt |\n\nMiecz Thorina to miecz z modelu Hooded Adventurer. Arcyklejnot, lina, kamienie, namioty, Samotna Góra i pozostałe obiekty to proste bryły zbudowane w kodzie.\n\n## Biblioteki i czcionki\n\n- three.js 0.160 — licencja MIT — https://threejs.org\n- Czcionka Cinzel (Google Fonts) — SIL Open Font License 1.1\n\n## Dźwięki\n\nWszystkie nagrania mają licencję **CC0 1.0 (domena publiczna)**. Pliki zostały przycięte i wyrównane głośnościowo (ffmpeg).\n\n### Muzyka (OpenGameArt)\n\n| Utwór | Autor | Rola w grze | Link |\n|---|---|---|---|\n| Fantasy: Rising Moon | randommind | delikatna, tajemnicza muzyka: menu, scenki, etapy | https://opengameart.org/content/fantasy-rising-moon |\n| Fantasy: Lament for a Warrior's Soul | randommind | smutna muzyka: śmierć Thorina, straty, zakończenia 2 i 3 | https://opengameart.org/content/fantasy-lament-for-a-warriors-soul |\n\n### Kroki (Kenney, paczka Impact Sounds)\n\n| Dźwięk | Autor | Rola w grze | Link |\n|---|---|---|---|\n| footstep_grass, footstep_snow, footstep_concrete | Kenney | kroki: skradanie po trawie, bieg po suchych liściach, kamienie w rzece | https://kenney.nl/assets/impact-sounds |\n\n### Efekty (Freesound)\n\n| Nagranie | Autor | Rola w grze | Link |\n|---|---|---|---|\n| sneeze.wav | moxobna | kichnięcie Bilba (scenka przy obozie) | https://freesound.org/s/54505/ |\n| sneeze | organicmanpl | kichnięcie z pełnego kataru | https://freesound.org/s/185619/ |\n| Sniff | OwlStorm | pociąganie nosem | https://freesound.org/s/151218/ |\n| SPLASH.wav | petenice | wpadnięcie do wody | https://freesound.org/s/9508/ |\n| Ambiance_Stream_Calm_Loop_Stereo.wav | Nox_Sound | szum rzeki (pętla) | https://freesound.org/s/548373/ |\n| Rope Sliding.wav | cmilo1269 | zjazd po linie | https://freesound.org/s/491960/ |\n| hamp rope creaks | 6polnic | skrzypienie liny (pętla) | https://freesound.org/s/231438/ |\n| Mysterious Sparkle Flourish | SkySpeira | pierścień | https://freesound.org/s/844398/ |\n| Arrow Loose and Flyby | saturdaysoundguy | strzał z łuku | https://freesound.org/s/394180/ |\n| Bow Release (Bow and Arrow) 4 | Ali_6868 | strzał z łuku | https://freesound.org/s/384917/ |\n| Arrow Impact | Twisted_Euphoria | trafienie strzałą | https://freesound.org/s/205938/ |\n| Woosh 2.mp3 | XxChr0nosxX | zamach mieczem | https://freesound.org/s/268226/ |\n| Strong Melee Swing | SypherZent | zamach mieczem | https://freesound.org/s/420670/ |\n| Sword Clash | loudernoises | szczęk mieczy | https://freesound.org/s/334169/ |\n| Sword Clash.wav | Bird_man | szczęk mieczy | https://freesound.org/s/275159/ |\n| Wolf howl | NaturesTemper | wycie warga | https://freesound.org/s/398430/ |\n| Beast Snarling | Christopherderp | warczenie warga | https://freesound.org/s/342204/ |\n| Goblin Snarl | qubodup | warczenie goblina | https://freesound.org/s/442815/ |\n| Goblin Death.wav | spookymodem | krzyk pokonanego goblina | https://freesound.org/s/249813/ |\n| Body fall.wav | DylanTheFish | upadek | https://freesound.org/s/417994/ |\n| Bonfire | forfie | ognisko (pętla) | https://freesound.org/s/364992/ |\n| AMBIENCE NIGHT FIELD CRICKET 01.wav | sengjinn | świerszcze nocą (pętla) | https://freesound.org/s/175020/ |\n| SwordBattle1.wav | freefire66 | odgłosy bitwy (pętla) | https://freesound.org/s/175950/ |\n| Jump Landing [remix MentalSanityOff's jumping 148796] | qubodup | lądowanie | https://freesound.org/s/172960/ |\n| Thump.wav | Macif | uderzenie | https://freesound.org/s/207824/ |\n\nSygnały zwycięstwa i porażki to krótkie tony generowane w kodzie (Web Audio).\n";</script>
+<script type="module">
+// src/main.js
+import * as THREE10 from "three";
+
+// src/core.js
+import * as THREE from "three";
+var $ = (id) => document.getElementById(id);
+var lerp = THREE.MathUtils.lerp;
+var clamp = THREE.MathUtils.clamp;
+var rnd = (a, b) => a + Math.random() * (b - a);
+var damp = (k, dt) => 1 - Math.exp(-k * dt);
+var angLerp = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * k;
+var angDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
+var V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
+var renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+$("game").append(renderer.domElement);
+var BASE_FOV = 72;
+var camera = new THREE.PerspectiveCamera(BASE_FOV, innerWidth / innerHeight, 0.05, 1500);
+var shiftK = 0;
+function frameShift(k) {
+  shiftK = k;
+  if (k) camera.setViewOffset(innerWidth, innerHeight, 0, innerHeight * k, innerWidth, innerHeight);
+  else camera.clearViewOffset();
+}
+addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  frameShift(shiftK);
+});
+var input = { keys: /* @__PURE__ */ new Set(), pressed: /* @__PURE__ */ new Set(), clicks: /* @__PURE__ */ new Set(), buttons: /* @__PURE__ */ new Set(), dx: 0, dy: 0 };
+var canvas = renderer.domElement;
+var isLocked = () => document.pointerLockElement === canvas;
+function lock() {
+  try {
+    const p = canvas.requestPointerLock();
+    if (p && p.catch) p.catch(() => {
+    });
+  } catch (e) {
+  }
+}
+function unlock() {
+  if (document.pointerLockElement) document.exitPointerLock();
+}
+addEventListener("keydown", (e) => {
+  if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) e.preventDefault();
+  input.keys.add(e.code);
+  if (!e.repeat) input.pressed.add(e.code);
+});
+addEventListener("keyup", (e) => input.keys.delete(e.code));
+addEventListener("blur", () => input.keys.clear());
+document.addEventListener("mousemove", (e) => {
+  if (isLocked()) {
+    input.dx += e.movementX;
+    input.dy += e.movementY;
+  }
+});
+canvas.addEventListener("mousedown", (e) => {
+  input.buttons.add(e.button);
+  input.clicks.add(e.button);
+});
+addEventListener("mouseup", (e) => input.buttons.delete(e.button));
+addEventListener("contextmenu", (e) => e.preventDefault());
+var key = (...codes) => codes.some((c) => input.keys.has(c));
+var hit = (...codes) => codes.some((c) => input.pressed.has(c));
+var mode = null;
+function setMode(m) {
+  if (mode && mode !== m) {
+    if (mode.dispose) mode.dispose();
+    if (mode.scene && mode.scene !== (m && m.scene)) disposeScene(mode.scene);
+  }
+  mode = m;
+}
+function disposeScene(scene) {
+  scene.traverse((o) => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) [].concat(o.material).forEach((mt) => mt.dispose());
+    if (o.isLight && o.shadow && o.shadow.map) {
+      o.shadow.map.dispose();
+      o.shadow.map = null;
+    }
+  });
+}
+var paused = false;
+function setPaused(p) {
+  paused = p;
+}
+var clock = new THREE.Clock();
+var frames = 0;
+var fpsT = 0;
+window.FPS = 0;
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+  if (mode) {
+    if (!paused) mode.update(dt, t);
+    if (mode.scene) renderer.render(mode.scene, camera);
+  }
+  input.pressed.clear();
+  input.clicks.clear();
+  input.dx = input.dy = 0;
+  frames++;
+  fpsT += dt;
+  if (fpsT >= 1) {
+    window.FPS = Math.round(frames / fpsT);
+    frames = 0;
+    fpsT = 0;
+  }
+});
+
+// src/chars.js
+import * as THREE2 from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
+var RAW = {};
+var parse = (b64) => new Promise((ok, err) => {
+  const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  new GLTFLoader().parse(bin.buffer, "", ok, err);
+});
+async function loadModels(progress) {
+  const names = Object.keys(window.MODELS || {});
+  let n = 0;
+  for (const k of names) {
+    const g = await parse(window.MODELS[k]);
+    delete window.MODELS[k];
+    g.scene.updateMatrixWorld(true);
+    const he = g.scene.getObjectByName("Head_end");
+    g.headY = he ? he.getWorldPosition(V()).y : new THREE2.Box3().setFromObject(g.scene).max.y;
+    g.clips = {};
+    for (const a of g.animations) {
+      const s = a.name.split("|").pop();
+      if (!g.clips[s]) g.clips[s] = a;
+    }
+    RAW[k] = g;
+    progress(++n / names.length);
+    await new Promise((r) => setTimeout(r, 0));
+  }
+}
+var BILBO = { Shirt: 9316894, UnderShirt: 15260864, Pants: 6965802, Boots: 14724229, Hair: 5911832 };
+var HOODS = [2771498, 9052192, 2771594, 2771594, 5909098, 5909098, 6974058, 5913120, 13158584, 11044906, 11044906, 8034922];
+var BEARDS = [3815994, 14211280, 3810324, 12623936, 5913120, 2759184, 6965802, 9079424, 8010266, 2759184, 3810324, 10512938];
+var MEN = [[4864554, 6969920], [2765894, 4871270], [5916208, 3813408], [3815984, 5921352], [4860452, 6965818]];
+var ELVES = [{}, { Brown: 3033642, Brown2: 2373662, LightBrown: 5929546 }, { Brown: 3820090, LightBrown: 9083514 }];
+var IRON = [6975094, 8006174, 4869718];
+var KINDS = {
+  bilbo: { glb: "bilbo", h: 1.1, xz: 1.15, colors: BILBO, glow: 0.2, feet: 1.6 },
+  elf: { glb: "elf", h: 1.95, glow: 0.08, palette: ELVES },
+  elfKing: { glb: "king", h: 2, glow: 0.12, colors: { Blue: 2379820, Beige: 12108960, DarkBrown: 2767394, Hair_White: 15262408, Metal: 13159636 } },
+  thorin: { glb: "king", h: 1.42, xz: 1.3, glow: 0.14, sword: true, colors: { Blue: 1981048, Beige: 5916210, DarkBrown: 2759698, Hair_White: 2760214 } },
+  dain: { glb: "king", h: 1.4, xz: 1.35, glow: 0.12, sword: true, colors: { Blue: 8004632, Beige: 6967352, Hair_White: 11558954 } },
+  dwarf: { glb: "adventurer", h: 1.35, xz: 1.3, glow: 0.1, palette: HOODS.map((c, i) => ({ Green: c, LightGreen: c, Hair: BEARDS[i], Eyebrows: BEARDS[i] })) },
+  ironDwarf: { glb: "adventurer", h: 1.35, xz: 1.35, glow: 0.08, sword: true, hide: ["Backpack"], palette: IRON.map((c) => ({ Green: c, LightGreen: 9080470, Brown: 3811870 })) },
+  human: { glb: "adventurer", h: 1.8, glow: 0.08, hide: ["Backpack"], palette: MEN.map(([a, b]) => ({ Green: a, LightGreen: b })) },
+  bard: { glb: "adventurer", h: 1.86, glow: 0.16, hide: ["Backpack"], colors: { Green: 2898504, LightGreen: 4740714, Brown: 3811870, Brown2: 2760214, Hair: 1709072, Eyebrows: 1709072 } },
+  goblin: { glb: "orc", h: 1.3, glow: 0.2, colors: { Orc_Main: 6254138, Orc_Secondary: 3950118, Orc_Hair: 1710610 } },
+  warg: { glb: "wolf", h: 1.55, glow: 0.22, colors: { Main: 4867136, Main_Light: 7104096, Eyes_Black: 16723984 }, emissiveOnly: { Eyes_Black: 3 } }
+};
+var ALIAS = {
+  hit: ["RecieveHit", "HitRecieve", "HitReact", "Idle_HitReact_Left"],
+  attack: ["Sword_Slash", "Weapon", "Dagger_Attack", "Attack"],
+  run: ["Run", "Gallop"],
+  idle: ["Idle"],
+  walk: ["Walk"],
+  death: ["Death"],
+  aim: ["Idle_Gun_Pointing", "Idle"],
+  shoot: ["Gun_Shoot", "Punch"],
+  punch: ["Punch_Right", "Punch", "Attack"],
+  wave: ["Wave", "Yes"],
+  talk: ["Interact", "Wave", "Yes", "PickUp"],
+  guard: ["Idle_Sword", "Attacking_Idle", "Idle"],
+  yes: ["Yes", "Wave"],
+  no: ["No"]
+};
+var Char = class {
+  constructor(kind, { i = 0, colors } = {}) {
+    const K = KINDS[kind], raw = RAW[K.glb];
+    this.kind = kind;
+    this.K = K;
+    this.raw = raw;
+    this.root = new THREE2.Group();
+    this.model = SkeletonUtils.clone(raw.scene);
+    const k = K.h / raw.headY, xz = K.xz || 1;
+    this.model.scale.set(k * xz, k, k * xz);
+    const col = { ...K.colors || {}, ...K.palette ? K.palette[i % K.palette.length] : {}, ...colors || {} };
+    this.mats = [];
+    if (K.hide) K.hide.forEach((n) => {
+      const o = this.model.getObjectByName(n);
+      if (o) o.visible = false;
+    });
+    this.model.traverse((o) => {
+      if (!o.isMesh) return;
+      if (o.name === "Sword" && kind !== "elf") {
+        o.visible = false;
+        return;
+      }
+      o.castShadow = true;
+      o.frustumCulled = false;
+      o.material = o.material.clone();
+      const c = col[o.material.name];
+      if (c !== void 0) o.material.color.setHex(c);
+      if (o.material.emissive) {
+        const e = K.emissiveOnly && K.emissiveOnly[o.material.name];
+        o.material.emissive.copy(o.material.color).multiplyScalar(e || K.glow || 0);
+      }
+      this.mats.push(o.material);
+    });
+    this.root.add(this.model);
+    this.feet = K.feet ? ["FootL", "FootR"].map((n) => this.model.getObjectByName(n)) : null;
+    this.mixer = new THREE2.AnimationMixer(this.model);
+    this.mixer.addEventListener("finished", (e) => {
+      if (e.action === this.cur && this.then) {
+        const t = this.then;
+        this.then = null;
+        this.play(t);
+      }
+    });
+    this.holds = [];
+    this.cur = null;
+    if (K.sword) this.addSword();
+    this.play("idle", { fade: 0 });
+    this.mixer.update(Math.random() * 2);
+  }
+  clip(name) {
+    const c = this.raw.clips;
+    if (c[name]) return c[name];
+    for (const n of ALIAS[name] || []) if (c[n]) return c[n];
+    return null;
+  }
+  has(name) {
+    return !!this.clip(name);
+  }
+  // once: animacja raz; then: co potem; hold: zatrzymaj na ostatniej klatce
+  play(name, { fade: fade2 = 0.25, once = false, then = null, speed = 1 } = {}) {
+    const clip = this.clip(name);
+    if (!clip) return null;
+    const a = this.mixer.clipAction(clip);
+    a.timeScale = speed;
+    if (this.cur === a && !once) return a;
+    a.reset();
+    a.setLoop(once ? THREE2.LoopOnce : THREE2.LoopRepeat);
+    a.clampWhenFinished = once;
+    a.play();
+    if (this.cur && this.cur !== a) {
+      if (fade2 > 0) this.cur.crossFadeTo(a, fade2, false);
+      else this.cur.stop();
+    }
+    this.cur = a;
+    this.curName = name;
+    this.then = then;
+    return a;
+  }
+  // poza z ostatniej klatki animacji (np. leżący Thorin)
+  pose(name) {
+    this.play(name, { once: true, fade: 0 });
+    this.mixer.update(30);
+  }
+  update(dt) {
+    this.mixer.update(dt);
+    if (this.feet) this.feet.forEach((f) => f && f.scale.setScalar(this.K.feet));
+    if (this.holds.length) {
+      this.root.updateMatrixWorld(true);
+      for (const h of this.holds) {
+        h.bone.getWorldPosition(h.obj.position);
+        this.root.worldToLocal(h.obj.position).add(h.off);
+      }
+    }
+  }
+  // przedmiot trzymany w dłoni: pozycja z kości, obrót stały względem postaci (osie kości różnią się między modelami)
+  hold(obj, bone = "WristL", off = V(), rot = null) {
+    const b = this.model.getObjectByName(bone) || this.model.getObjectByName(bone.replace("Wrist", "Middle1"));
+    if (!b) return obj;
+    if (rot) obj.rotation.copy(rot);
+    this.root.add(obj);
+    this.holds.push({ obj, bone: b, off });
+    return obj;
+  }
+  unhold(obj) {
+    this.holds = this.holds.filter((h) => h.obj !== obj);
+  }
+  // miecz z modelu elfa (ten sam szkielet Quaterniusa): przypięty do palców prawej dłoni jak w oryginale
+  addSword() {
+    const src = RAW.elf.scene.getObjectByName("Sword");
+    const bone = this.model.getObjectByName("Middle1R");
+    if (!src || !bone) return;
+    const s = src.clone(true);
+    s.traverse((o) => {
+      if (o.isMesh) {
+        o.material = o.material.clone();
+        if (o.material.emissive) o.material.emissive.copy(o.material.color).multiplyScalar(0.15);
+        o.castShadow = true;
+      }
+    });
+    s.position.copy(src.position);
+    s.quaternion.copy(src.quaternion);
+    s.scale.copy(src.scale);
+    s.visible = true;
+    bone.add(s);
+    this.sword = s;
+  }
+  setOpacity(o) {
+    this.mats.forEach((m) => {
+      m.transparent = o < 1;
+      m.opacity = o;
+      m.depthWrite = o >= 1;
+    });
+  }
+  get pos() {
+    return this.root.position;
+  }
+  face(x, z) {
+    this.root.rotation.y = Math.atan2(x - this.root.position.x, z - this.root.position.z);
+  }
+};
+function fitModel(key2, size, axis = "y") {
+  const g = RAW[key2].scene.clone(true);
+  const box = new THREE2.Box3().setFromObject(g), c = box.getCenter(V()), s = box.getSize(V());
+  g.position.sub(c);
+  const pivot = new THREE2.Group();
+  pivot.add(g);
+  const p = new THREE2.Group();
+  p.add(pivot);
+  p.scale.setScalar(size / s[axis]);
+  p.pivot = pivot;
+  g.traverse((o) => {
+    if (o.isMesh) {
+      o.castShadow = true;
+      o.material = o.material.clone();
+      if (o.material.emissive) o.material.emissive.copy(o.material.color).multiplyScalar(0.15);
+    }
+  });
+  return p;
+}
+function makeBow(size = 1.2) {
+  const b = fitModel("bow", size);
+  b.pivot.rotation.y = Math.PI / 2;
+  return b;
+}
+function makeArrow(len = 0.85) {
+  const a = fitModel("arrow", len);
+  a.pivot.rotation.x = Math.PI / 2;
+  return a;
+}
+var Rider = class {
+  constructor() {
+    this.warg = new Char("warg");
+    this.gob = new Char("goblin");
+    this.root = this.warg.root;
+    this.warg.hold(this.gob.root, "Torso", V(0, -0.15, -0.1));
+    this.alive = true;
+  }
+  play(name, o) {
+    this.warg.play(name === "run" ? "run" : name, o);
+    if (name === "death") this.gob.play("death", { once: true });
+    else if (name === "attack") this.gob.play("attack", { once: true, then: "idle" });
+  }
+  update(dt) {
+    this.warg.update(dt);
+    this.gob.update(dt);
+  }
+  get pos() {
+    return this.root.position;
+  }
+};
+
+// src/ui.js
+var cur = null;
+function waiter(kind, id) {
+  return new Promise((res) => {
+    cur = { kind, id, res };
+  });
+}
+function resolveWaiter(kind, v) {
+  if (cur && (!kind || cur.kind === kind)) {
+    const c = cur;
+    cur = null;
+    c.res(v);
+    return true;
+  }
+  return false;
+}
+var currentWaiter = () => cur && { kind: cur.kind, id: cur.id };
+function dropWaiter() {
+  cur = null;
+}
+var show = (id, on = true) => $(id).classList.toggle("hidden", !on);
+addEventListener("keydown", (e) => {
+  if (e.repeat) return;
+  if ((e.code === "Space" || e.code === "Enter") && cur && (cur.kind === "line" || cur.kind === "card")) resolveWaiter();
+});
+addEventListener("click", (e) => {
+  if (e.target.closest("button")) return;
+  if (cur && (cur.kind === "line" || cur.kind === "card")) resolveWaiter();
+});
+function hud({ ring = false, katar = false, speed = false, counter = null, cross = false, keys = null } = {}) {
+  const anyBar = ring || katar || speed;
+  show("hud", anyBar);
+  show("ringRow", ring);
+  show("katarRow", katar);
+  show("speedRow", speed);
+  show("counter", counter !== null);
+  if (counter !== null) $("counter").textContent = counter;
+  show("cross", cross);
+  show("keys", !!keys);
+  if (keys) $("keys").textContent = keys;
+  $("status").textContent = "";
+}
+function setBar(id, v, warn = false) {
+  $(id).firstChild.style.width = Math.max(0, Math.min(1, v)) * 100 + "%";
+  $(id).classList.toggle("warn", warn);
+}
+function hideAll() {
+  hud();
+  ["dlg", "choice", "card", "overlay", "ending", "menu", "info", "plansza"].forEach((id) => show(id, false));
+  center("", "");
+  mark("");
+  $("vigAlert").style.opacity = 0;
+  $("vigRing").style.opacity = 0;
+  $("say").style.opacity = 0;
+  $("tip").style.opacity = 0;
+  document.querySelector("canvas").style.filter = "";
+}
+function say(who, text, ms = 2500) {
+  const el = $("say");
+  el.innerHTML = who ? `<b>${who}</b>${text}` : text;
+  el.style.opacity = 1;
+  clearTimeout(say.t);
+  say.t = setTimeout(() => el.style.opacity = 0, ms);
+}
+function tip(text, ms = 6e3) {
+  const el = $("tip");
+  el.textContent = text;
+  el.style.opacity = 1;
+  clearTimeout(tip.t);
+  tip.t = setTimeout(() => el.style.opacity = 0, ms);
+}
+function center(title, sub = "") {
+  $("title").textContent = title;
+  $("sub").textContent = sub;
+}
+function mark(t) {
+  $("mark").textContent = t;
+}
+function fade(to, ms = 800) {
+  const f = $("fade");
+  f.style.transition = `opacity ${ms}ms`;
+  f.style.opacity = to;
+  return new Promise((r) => setTimeout(r, ms));
+}
+function dialog(who, text) {
+  show("dlg");
+  $("dlgWho").textContent = who || "";
+  $("dlgWho").style.display = who ? "" : "none";
+  $("dlgText").textContent = text;
+  $("dlgText").className = who ? "" : "narr";
+}
+function hideDialog() {
+  show("dlg", false);
+}
+async function choice(q, id) {
+  show("choice");
+  $("choiceQ").textContent = q;
+  const v = await waiter("choice", id);
+  show("choice", false);
+  return v;
+}
+$("bYes").onclick = () => resolveWaiter("choice", true);
+$("bNo").onclick = () => resolveWaiter("choice", false);
+async function card(title, text, id = "card") {
+  show("card");
+  $("cardTitle").textContent = title;
+  $("cardText").textContent = text;
+  await waiter("card", id);
+  show("card", false);
+}
+async function overlay(title, text, keys, go = "Kliknij, aby zacz\u0105\u0107", id = "overlay") {
+  show("overlay");
+  $("ovTitle").textContent = title;
+  $("ovText").textContent = text;
+  $("ovKeys").textContent = keys || "";
+  $("ovGo").textContent = go;
+  await waiter("overlay", id);
+  show("overlay", false);
+}
+$("overlay").addEventListener("click", (e) => {
+  if (e.target.closest("button")) return;
+  lock();
+  resolveWaiter("overlay") || resolveWaiter("pause");
+});
+async function ending(title, text, id) {
+  show("ending");
+  $("endTitle").textContent = title;
+  $("endText").textContent = text;
+  const v = await waiter("ending", id);
+  show("ending", false);
+  return v;
+}
+$("bAgain").onclick = () => resolveWaiter("ending", "again");
+$("bMenu").onclick = () => resolveWaiter("ending", "menu");
+function md(text) {
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(https?:\/\/[^\s|)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  let out = "", list = false;
+  for (const line of text.split("\n")) {
+    const l = line.trim();
+    if (l.startsWith("- ") || l.startsWith("|") && !/^\|[-\s|]+\|$/.test(l)) {
+      if (!list) {
+        out += "<ul>";
+        list = true;
+      }
+      const cells = l.startsWith("|") ? l.slice(1, -1).split("|").map((c) => c.trim()) : [l.slice(2)];
+      if (cells[0] === "Model") continue;
+      out += `<li>${cells.map(inline).join(" \u2014 ")}</li>`;
+      continue;
+    }
+    if (list && !/^\|[-\s|]+\|$/.test(l)) {
+      out += "</ul>";
+      list = false;
+    }
+    if (l.startsWith("# ")) continue;
+    if (l.startsWith("## ")) out += `<h3>${inline(l.slice(3))}</h3>`;
+    else if (l && !l.startsWith("|")) out += `<p>${inline(l)}</p>`;
+  }
+  return out + (list ? "</ul>" : "");
+}
+function ringEffect(on, char) {
+  document.querySelector("#game canvas").style.filter = on ? "grayscale(.85) brightness(1.2) contrast(1.1)" : "";
+  $("vigRing").style.opacity = on ? 1 : 0;
+  if (char) char.setOpacity(on ? 0.18 : 1);
+}
+
+// src/sfx.js
+var ac = null;
+var master;
+var musicBus;
+var ambBus;
+var sfxBus;
+var muted = false;
+var BUF = {};
+var decoding = {};
+var state = { music: null, musicNode: null, amb: {}, played: {}, decoded: 0, failed: [] };
+var audioState = state;
+function unlock2() {
+  if (ac) {
+    if (ac.state === "suspended") ac.resume();
+    return;
+  }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  ac = new AC();
+  master = ac.createGain();
+  master.connect(ac.destination);
+  musicBus = ac.createGain();
+  musicBus.gain.value = 0.55;
+  musicBus.connect(master);
+  ambBus = ac.createGain();
+  ambBus.gain.value = 0.7;
+  ambBus.connect(master);
+  sfxBus = ac.createGain();
+  sfxBus.gain.value = 0.9;
+  sfxBus.connect(master);
+  master.gain.value = muted ? 0 : 1;
+  [state.music && "music_" + state.music, ...Object.keys(state.amb).map((n) => "amb_" + n)].filter(Boolean).forEach(decode);
+  Object.keys(window.SOUNDS || {}).forEach(decode);
+  applyMusic();
+  Object.keys(state.amb).forEach(applyAmb);
+}
+["pointerdown", "keydown"].forEach((e) => addEventListener(e, unlock2));
+function decode(name) {
+  if (BUF[name] || decoding[name] || !window.SOUNDS || !window.SOUNDS[name]) return decoding[name];
+  const bin = Uint8Array.from(atob(window.SOUNDS[name]), (c) => c.charCodeAt(0));
+  decoding[name] = new Promise((ok) => ac.decodeAudioData(bin.buffer, (b) => {
+    BUF[name] = b;
+    state.decoded++;
+    ok(b);
+  }, () => {
+    state.failed.push(name);
+    ok(null);
+  }));
+  return decoding[name];
+}
+function pick(name) {
+  const all = Object.keys(window.SOUNDS || {}).concat(Object.keys(BUF));
+  const vars = [...new Set(all.filter((n) => n === name || new RegExp("^" + name + "(_\\d+|\\d)$").test(n)))];
+  return vars.length ? vars[Math.floor(Math.random() * vars.length)] : null;
+}
+function sfx(name, { vol = 1, rate = 1, vary = 0.06, offset = 0, delay = 0 } = {}) {
+  if (!ac) return;
+  if (UI_TONES[name]) return UI_TONES[name](ac.currentTime + delay);
+  const n = pick(name);
+  if (!n) return;
+  state.played[name] = (state.played[name] || 0) + 1;
+  const go = (b) => {
+    if (!b) return;
+    const s = ac.createBufferSource();
+    s.buffer = b;
+    s.playbackRate.value = rate * (1 + (Math.random() * 2 - 1) * vary);
+    const g = ac.createGain();
+    g.gain.value = vol;
+    s.connect(g).connect(sfxBus);
+    s.start(ac.currentTime + delay, Math.min(offset, b.duration - 0.05));
+  };
+  if (BUF[n]) go(BUF[n]);
+  else decode(n)?.then(go);
+}
+function music(name, vol = 1) {
+  if (state.music === name && state.musicVol === vol) return;
+  const same = state.music === name;
+  state.music = name;
+  state.musicVol = vol;
+  if (!ac) return;
+  if (same && state.musicNode) {
+    state.musicNode.g.gain.setTargetAtTime(vol, ac.currentTime, 0.8);
+    return;
+  }
+  applyMusic();
+}
+async function applyMusic() {
+  if (!ac) return;
+  const old = state.musicNode;
+  state.musicNode = null;
+  if (old) {
+    old.g.gain.setTargetAtTime(0, ac.currentTime, 0.7);
+    setTimeout(() => {
+      try {
+        old.s.stop();
+      } catch (e) {
+      }
+    }, 4e3);
+  }
+  const name = state.music;
+  if (!name) return;
+  const b = BUF["music_" + name] || await decode("music_" + name);
+  if (!b || state.music !== name || state.musicNode) return;
+  const s = ac.createBufferSource();
+  s.buffer = b;
+  s.loop = true;
+  const g = ac.createGain();
+  g.gain.value = 0;
+  g.gain.setTargetAtTime(state.musicVol, ac.currentTime, 1.2);
+  s.connect(g).connect(musicBus);
+  s.start();
+  state.musicNode = { s, g };
+}
+function amb(layers) {
+  for (const n of Object.keys(state.amb)) if (!(n in layers)) {
+    state.amb[n].want = 0;
+    applyAmb(n);
+  }
+  for (const [n, v] of Object.entries(layers)) setAmb(n, v);
+}
+function setAmb(n, v) {
+  const a = state.amb[n] || (state.amb[n] = { want: 0 });
+  if (Math.abs(a.want - v) < 0.01 && a.src) return;
+  a.want = v;
+  applyAmb(n);
+}
+async function applyAmb(n) {
+  if (!ac) return;
+  const a = state.amb[n];
+  if (!a.src) {
+    if (a.want <= 0 || a.loading) return;
+    a.loading = true;
+    const b = BUF["amb_" + n] || await decode("amb_" + n);
+    a.loading = false;
+    if (!b || a.src) return;
+    a.src = ac.createBufferSource();
+    a.src.buffer = b;
+    a.src.loop = true;
+    a.gain = ac.createGain();
+    a.gain.gain.value = 0;
+    a.src.connect(a.gain).connect(ambBus);
+    a.src.start(0, Math.random() * b.duration);
+  }
+  a.gain.gain.setTargetAtTime(a.want, ac.currentTime, 0.6);
+}
+function toggleMute() {
+  muted = !muted;
+  if (master) master.gain.setTargetAtTime(muted ? 0 : 1, ac.currentTime, 0.05);
+  return muted;
+}
+var isMuted = () => muted;
+function footstep(surface, { vol = 0.5, rate = 1 } = {}) {
+  sfx("step_" + surface, { vol, rate, vary: 0.1 });
+}
+function tone(t0, dur, f, vol, type = "triangle") {
+  const o = ac.createOscillator();
+  o.type = type;
+  o.frequency.value = f;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(1e-4, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
+  g.gain.exponentialRampToValueAtTime(1e-4, t0 + dur);
+  o.connect(g).connect(sfxBus);
+  o.start(t0);
+  o.stop(t0 + dur);
+}
+var UI_TONES = {
+  win: (t) => [392, 523, 659, 784].forEach((f, i) => tone(t + i * 0.13, 0.7, f, 0.12)),
+  fail: (t) => {
+    tone(t, 0.6, 196, 0.15);
+    tone(t + 0.18, 0.7, 147, 0.15);
+  }
+};
+
+// src/stage.js
+var S = { active: null };
+async function runStage(st) {
+  st.state = "intro";
+  st.timers = [];
+  st.at = (ms, f) => st.timers.push(setTimeout(f, ms));
+  st.clearTimers = () => {
+    st.timers.forEach(clearTimeout);
+    st.timers = [];
+  };
+  st.finish = () => resolveWaiter("stage");
+  camera.fov = BASE_FOV;
+  camera.updateProjectionMatrix();
+  frameShift(0);
+  setMode({ scene: st.w.scene, update: (dt, t) => {
+    st.update(dt, t);
+    st.w.update(dt, t);
+  }, dispose: () => st.clearTimers() });
+  st.update(0.016, 0);
+  S.active = st;
+  music(st.music === void 0 ? "main" : st.music, st.musicVol ?? 0.45);
+  amb(st.amb || { night: 0.8 });
+  await fade(0);
+  await overlay(st.title, st.text, st.keys);
+  st.state = "play";
+  if (st.begin) st.begin();
+  await waiter("stage", st.id);
+  st.state = "done";
+  st.clearTimers();
+  unlock();
+  await fade(1);
+  S.active = null;
+  hideAll();
+  hud();
+}
+
+// src/scenes.js
+import * as THREE4 from "three";
+
+// src/env.js
+import * as THREE3 from "three";
+var MOON = V(-0.35, 0.42, -1).normalize();
+function canvasTex(size, draw) {
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  draw(c.getContext("2d"), size);
+  const t = new THREE3.CanvasTexture(c);
+  t.colorSpace = THREE3.SRGBColorSpace;
+  return t;
+}
+var glowTex = canvasTex(128, (x, s) => {
+  const g = x.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  g.addColorStop(0, "rgba(255,255,255,1)");
+  g.addColorStop(0.3, "rgba(255,255,255,0.35)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  x.fillStyle = g;
+  x.fillRect(0, 0, s, s);
+});
+var smokeTex = canvasTex(64, (x, s) => {
+  const g = x.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  g.addColorStop(0, "rgba(255,255,255,.55)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  x.fillStyle = g;
+  x.fillRect(0, 0, s, s);
+});
+function glow(color, scale, fog = true, opacity = 1) {
+  const s = new THREE3.Sprite(new THREE3.SpriteMaterial({ map: glowTex, color, blending: THREE3.AdditiveBlending, depthWrite: false, transparent: true, fog, opacity }));
+  s.scale.setScalar(scale);
+  return s;
+}
+function nightWorld({ fog = 0.022, sky = true, hemi = 0.9, moon = 0.7, shadowSize = 45 } = {}) {
+  const scene = new THREE3.Scene();
+  scene.fog = new THREE3.FogExp2(790820, fog);
+  const w = { scene, ups: [], rockMeshes: [], rocks: [], camBlock: [], focus: V(), h: () => 0 };
+  if (sky) {
+    w.sky = new THREE3.Group();
+    scene.add(w.sky);
+    w.sky.add(new THREE3.Mesh(new THREE3.SphereGeometry(600, 32, 16), new THREE3.ShaderMaterial({
+      side: THREE3.BackSide,
+      depthWrite: false,
+      fog: false,
+      vertexShader: "varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }",
+      fragmentShader: "varying vec3 vP; void main(){ float h = clamp(vP.y, 0., 1.); gl_FragColor = vec4(mix(vec3(.20,.20,.36), vec3(.02,.03,.09), pow(h, .5)), 1.); }"
+    })));
+    const p = [];
+    for (let i = 0; i < 1500; i++) {
+      const th = Math.random() * Math.PI * 2, ph = Math.acos(0.05 + Math.random() * 0.95);
+      p.push(Math.sin(ph) * Math.cos(th) * 500, Math.cos(ph) * 500, Math.sin(ph) * Math.sin(th) * 500);
+    }
+    w.sky.add(new THREE3.Points(
+      new THREE3.BufferGeometry().setAttribute("position", new THREE3.Float32BufferAttribute(p, 3)),
+      new THREE3.PointsMaterial({ color: 16777215, size: 1.4, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.85 })
+    ));
+    const moonTex = canvasTex(128, (x, s) => {
+      x.fillStyle = "#eef1f8";
+      x.beginPath();
+      x.arc(s / 2, s / 2, s * 0.42, 0, 7);
+      x.fill();
+      x.fillStyle = "#cfd6e6";
+      [[50, 52, 9], [76, 72, 7], [68, 40, 5]].forEach(([a, b, r]) => {
+        x.beginPath();
+        x.arc(a, b, r, 0, 7);
+        x.fill();
+      });
+    });
+    const m = new THREE3.Sprite(new THREE3.SpriteMaterial({ map: moonTex, fog: false, depthWrite: false }));
+    m.scale.setScalar(26);
+    m.position.copy(MOON).multiplyScalar(450);
+    w.sky.add(m);
+    const mg = glow(9414360, 170, false, 0.55);
+    mg.position.copy(m.position);
+    w.sky.add(mg);
+  }
+  w.hemi = new THREE3.HemisphereLight(3820160, 1316896, hemi);
+  scene.add(w.hemi);
+  const ml = new THREE3.DirectionalLight(10334952, moon);
+  ml.castShadow = true;
+  ml.shadow.mapSize.set(2048, 2048);
+  Object.assign(ml.shadow.camera, { left: -shadowSize, right: shadowSize, top: shadowSize, bottom: -shadowSize, near: 1, far: 200 });
+  ml.shadow.bias = -8e-4;
+  scene.add(ml, ml.target);
+  w.moon = ml;
+  w.fill = new THREE3.PointLight(11058416, 0, 8, 1.8);
+  scene.add(w.fill);
+  w.update = (dt, t) => {
+    for (const f of w.ups) f(dt, t);
+    if (w.sky) w.sky.position.copy(camera.position);
+    ml.position.copy(w.focus).addScaledVector(MOON, 80);
+    ml.target.position.copy(w.focus);
+  };
+  return w;
+}
+function fillAt(w, target, intensity = 14, back2 = 1.8) {
+  const d = V().subVectors(camera.position, target).setY(0);
+  if (d.lengthSq() < 1e-4) d.set(0, 0, 1);
+  d.normalize();
+  w.fill.intensity = intensity;
+  w.fill.position.copy(target).addScaledVector(d, back2).y += 0.9;
+}
+function terrain(w, { x1, x2, z1, z2, step = 2, color = 922136, h }) {
+  const W = x2 - x1, D = z2 - z1;
+  const geo = new THREE3.PlaneGeometry(W, D, Math.ceil(W / step), Math.ceil(D / step));
+  geo.rotateX(-Math.PI / 2);
+  geo.translate((x1 + x2) / 2, 0, (z1 + z2) / 2);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) pos.setY(i, h(pos.getX(i), pos.getZ(i)));
+  geo.computeVertexNormals();
+  const m = new THREE3.Mesh(geo, new THREE3.MeshStandardMaterial({ color, roughness: 1 }));
+  m.receiveShadow = true;
+  w.scene.add(m);
+  w.h = h;
+  w.ground = m;
+  return m;
+}
+function grass(w, { n = 9e3, x1, x2, z1, z2, color = 1977398, skip }) {
+  const geo = new THREE3.ConeGeometry(0.025, 0.45, 3);
+  geo.translate(0, 0.22, 0);
+  const g = new THREE3.InstancedMesh(geo, new THREE3.MeshLambertMaterial({ color }), n);
+  const o = new THREE3.Object3D();
+  let k = 0;
+  for (let i = 0; i < n * 2 && k < n; i++) {
+    const x = rnd(x1, x2), z = rnd(z1, z2);
+    if (skip && skip(x, z)) continue;
+    o.position.set(x, w.h(x, z), z);
+    o.rotation.set(rnd(-0.2, 0.2), rnd(0, 6.3), 0);
+    o.scale.setScalar(rnd(0.6, 1.4));
+    o.updateMatrix();
+    g.setMatrixAt(k++, o.matrix);
+  }
+  g.count = k;
+  g.receiveShadow = true;
+  w.scene.add(g);
+}
+function pines(w, n, place) {
+  const g = new THREE3.InstancedMesh(new THREE3.ConeGeometry(1.6, 6, 7), new THREE3.MeshStandardMaterial({ color: 658964, roughness: 1 }), n);
+  const o = new THREE3.Object3D();
+  for (let i = 0; i < n; i++) {
+    const [x, z] = place(i), s = rnd(0.8, 1.8);
+    o.position.set(x, w.h(x, z) + 3 * s, z);
+    o.scale.setScalar(s);
+    o.rotation.y = rnd(0, 6.3);
+    o.updateMatrix();
+    g.setMatrixAt(i, o.matrix);
+  }
+  w.scene.add(g);
+}
+var rockMat = new THREE3.MeshStandardMaterial({ color: 1777190, roughness: 0.95, flatShading: true });
+function makeRock(w, x, z, r, big = true, solid = true) {
+  const geo = new THREE3.IcosahedronGeometry(r, 1), p = geo.attributes.position, v = V();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i);
+    v.multiplyScalar(1 + 0.25 * Math.sin(v.x * 3.1 + v.y * 5.3) * Math.cos(v.z * 4.7));
+    p.setXYZ(i, v.x, v.y * 0.75, v.z);
+  }
+  geo.computeVertexNormals();
+  const m = new THREE3.Mesh(geo, rockMat);
+  m.position.set(x, w.h(x, z) + r * 0.2, z);
+  m.rotation.y = rnd(0, 6.3);
+  m.castShadow = m.receiveShadow = true;
+  w.scene.add(m);
+  if (solid) {
+    w.rocks.push({ x, z, r, big });
+    w.rockMeshes.push(m);
+  }
+  return m;
+}
+var darkMat = new THREE3.MeshStandardMaterial({ color: 1709072, roughness: 1 });
+function fire(w, x, z, { light = 30, dist = 35, sparks = 120, beacon = true, smoke = false, scale = 1 } = {}) {
+  const y0 = w.h(x, z), f = {};
+  [0.6, -0.6].forEach((r) => {
+    const l = new THREE3.Mesh(new THREE3.CylinderGeometry(0.07 * scale, 0.07 * scale, 1.1 * scale, 6), darkMat);
+    l.position.set(x, y0 + 0.1, z);
+    l.rotation.set(Math.PI / 2, r, 0);
+    w.scene.add(l);
+  });
+  if (light) {
+    f.light = new THREE3.PointLight(16742954, light, dist, 1.5);
+    f.light.position.set(x, y0 + 0.8 * scale, z);
+    w.scene.add(f.light);
+  }
+  f.flame = glow(16751168, 1.6 * scale);
+  f.flame.position.set(x, y0 + 0.45 * scale, z);
+  w.scene.add(f.flame);
+  if (beacon) {
+    const b = glow(16738848, 9 * scale, false, 0.35);
+    b.position.set(x, y0 + 1, z);
+    w.scene.add(b);
+  }
+  const pos = new Float32Array(sparks * 3);
+  const sp = Array.from({ length: sparks }, () => ({ life: Math.random(), x: 0, z: 0, vx: 0, vz: 0 }));
+  const geo = new THREE3.BufferGeometry().setAttribute("position", new THREE3.BufferAttribute(pos, 3));
+  if (sparks) w.scene.add(new THREE3.Points(geo, new THREE3.PointsMaterial({ color: 16756832, size: 0.035 * scale, blending: THREE3.AdditiveBlending, transparent: true, depthWrite: false })));
+  if (smoke) smokeColumn(w, x, y0 + 1.5 * scale, z, scale);
+  const base = light, ph = rnd(0, 6);
+  w.ups.push((dt, t) => {
+    t += ph;
+    if (f.light) f.light.intensity = base * (0.87 + Math.sin(t * 13) * 0.1 + Math.sin(t * 29) * 0.07);
+    f.flame.scale.set((1.4 + Math.sin(t * 17) * 0.15) * scale, (1.9 + Math.sin(t * 11) * 0.25) * scale, 1);
+    if (!sparks) return;
+    const p = geo.attributes.position;
+    sp.forEach((s, i) => {
+      s.life += dt * (0.6 + i % 5 * 0.12);
+      if (s.life > 1) {
+        s.life = 0;
+        s.x = rnd(-0.25, 0.25);
+        s.z = rnd(-0.25, 0.25);
+        s.vx = rnd(-0.9, 0.9);
+        s.vz = rnd(-0.9, 0.9);
+      }
+      p.setXYZ(i, x + (s.x + s.vx * s.life) * scale, y0 + (0.3 + s.life * 3) * scale, z + (s.z + s.vz * s.life) * scale);
+    });
+    p.needsUpdate = true;
+  });
+  return f;
+}
+function torch(w, x, z, { light = 0, h = 2.2 } = {}) {
+  const y0 = w.h(x, z);
+  const pole = new THREE3.Mesh(new THREE3.CylinderGeometry(0.04, 0.05, h, 5), darkMat);
+  pole.position.set(x, y0 + h / 2, z);
+  w.scene.add(pole);
+  const fl = glow(16752704, 1.2);
+  fl.position.set(x, y0 + h + 0.15, z);
+  w.scene.add(fl);
+  if (light) {
+    const l = new THREE3.PointLight(16747066, light, 12, 1.6);
+    l.position.set(x, y0 + h + 0.2, z);
+    w.scene.add(l);
+  }
+  const ph = rnd(0, 6);
+  w.ups.push((dt, t) => fl.scale.set(1 + Math.sin(t * 15 + ph) * 0.12, 1.3 + Math.sin(t * 9 + ph) * 0.2, 1));
+}
+function smokeColumn(w, x, y, z, scale = 1, n = 14) {
+  const mat = new THREE3.SpriteMaterial({ map: smokeTex, color: 4210762, transparent: true, depthWrite: false, opacity: 0.35 });
+  const ps = Array.from({ length: n }, (_, i) => {
+    const s = new THREE3.Sprite(mat);
+    s.userData.life = i / n;
+    w.scene.add(s);
+    return s;
+  });
+  w.ups.push((dt) => ps.forEach((s) => {
+    s.userData.life = (s.userData.life + dt * 0.08) % 1;
+    const l = s.userData.life;
+    s.position.set(x + Math.sin(l * 5) * 0.6 * scale + l * 3 * scale, y + l * 14 * scale, z);
+    s.scale.setScalar((1.5 + l * 6) * scale);
+  }));
+}
+function mountain(w, x, y, z, r = 170, h = 140, gate = true) {
+  const m = new THREE3.Mesh(new THREE3.ConeGeometry(r, h, 9), new THREE3.MeshBasicMaterial({ color: 1712438, fog: false }));
+  m.position.set(x, y, z);
+  w.scene.add(m);
+  const cap = new THREE3.Mesh(new THREE3.ConeGeometry(r * 0.18, h * 0.18, 9), new THREE3.MeshBasicMaterial({ color: 3818598, fog: false }));
+  cap.position.set(x, y + h * 0.41, z);
+  w.scene.add(cap);
+  if (gate) {
+    const g = glow(16752720, r * 0.08, false, 0.8);
+    g.position.set(x + r * 0.02, y - h / 2 + 4, z - Math.sign(z) * r * 0.85);
+    w.scene.add(g);
+  }
+  return m;
+}
+function wall(w, z, { width = 70, height = 14, rope = false, gate = false } = {}) {
+  const m = new THREE3.MeshStandardMaterial({ color: 790035, roughness: 1 });
+  if (gate) {
+    [[-width / 4 - 2.5, width / 2 - 5], [width / 4 + 2.5, width / 2 - 5]].forEach(([x, wd]) => {
+      const b = new THREE3.Mesh(new THREE3.BoxGeometry(wd, height, 3), m);
+      b.position.set(x, height / 2, z);
+      b.castShadow = b.receiveShadow = true;
+      w.scene.add(b);
+      w.camBlock.push(b);
+    });
+    const top = new THREE3.Mesh(new THREE3.BoxGeometry(10, height - 7, 3), m);
+    top.position.set(0, 7 + (height - 7) / 2, z);
+    w.scene.add(top);
+    const inner = new THREE3.Mesh(new THREE3.BoxGeometry(10, 7, 0.5), new THREE3.MeshBasicMaterial({ color: 328707 }));
+    inner.position.set(0, 3.5, z + 1.2);
+    w.scene.add(inner);
+    const gl = glow(16752720, 9, true, 0.5);
+    gl.position.set(0, 3, z + 0.5);
+    w.scene.add(gl);
+  } else {
+    const b = new THREE3.Mesh(new THREE3.BoxGeometry(width, height, 3), m);
+    b.position.set(0, height / 2, z);
+    b.castShadow = b.receiveShadow = true;
+    w.scene.add(b);
+    w.camBlock.push(b);
+  }
+  for (let x = -width / 2 + 1; x <= width / 2 - 1; x += 2.4) {
+    const c = new THREE3.Mesh(new THREE3.BoxGeometry(1.3, 1.2, 0.6), m);
+    c.position.set(x, height + 0.6, z - 1.2);
+    w.scene.add(c);
+  }
+  if (rope) {
+    const r = new THREE3.Mesh(new THREE3.CylinderGeometry(0.03, 0.03, height + 1, 5), new THREE3.MeshStandardMaterial({ color: 9272414, emissive: 2760720 }));
+    r.position.set(1.2, height / 2 + 0.4, z - 1.6);
+    w.scene.add(r);
+    w.rope = r;
+  }
+}
+var tentMats = [3811868, 2767402, 4206622, 2763326].map((c) => new THREE3.MeshStandardMaterial({ color: c, roughness: 1 }));
+function tent(w, x, z, s, i = 0, rot = Math.PI / 4) {
+  const t = new THREE3.Mesh(new THREE3.ConeGeometry(s, s * 1.3, 4), tentMats[i % 4]);
+  t.position.set(x, w.h(x, z) + s * 0.65, z);
+  t.rotation.y = rot;
+  t.castShadow = t.receiveShadow = true;
+  w.scene.add(t);
+  return t;
+}
+function banner(w, x, z, color, h = 4) {
+  const y0 = w.h(x, z);
+  const pole = new THREE3.Mesh(new THREE3.CylinderGeometry(0.05, 0.05, h, 5), darkMat);
+  pole.position.set(x, y0 + h / 2, z);
+  w.scene.add(pole);
+  const cloth = new THREE3.Mesh(new THREE3.PlaneGeometry(0.9, 1.4, 6, 1), new THREE3.MeshStandardMaterial({ color, side: THREE3.DoubleSide, roughness: 1, emissive: color, emissiveIntensity: 0.15 }));
+  cloth.position.set(x + 0.47, y0 + h - 0.8, z);
+  w.scene.add(cloth);
+  const p = cloth.geometry.attributes.position, x0 = Float32Array.from({ length: p.count }, (_, i) => p.getX(i)), ph = rnd(0, 6);
+  w.ups.push((dt, t) => {
+    for (let i = 0; i < p.count; i++) p.setZ(i, Math.sin(t * 3 + x0[i] * 4 + ph) * 0.08 * (x0[i] + 0.45));
+    p.needsUpdate = true;
+  });
+}
+function makeGem(withLight = true) {
+  const g = new THREE3.Group();
+  const m = new THREE3.Mesh(new THREE3.OctahedronGeometry(0.08, 0), new THREE3.MeshStandardMaterial({ color: 16777215, emissive: 13624575, emissiveIntensity: 2.2, roughness: 0.1, metalness: 0.3, flatShading: true }));
+  m.scale.y = 1.3;
+  g.add(m);
+  const gl = glow(12572927, 0.9, true, 0.9);
+  g.add(gl);
+  if (withLight) {
+    const l = new THREE3.PointLight(13623551, 3, 5, 1.8);
+    g.add(l);
+    g.userData.light = l;
+  }
+  g.userData.spin = m;
+  return g;
+}
+function water(w, x1, x2, z1, z2, y) {
+  const m = new THREE3.Mesh(new THREE3.PlaneGeometry(x2 - x1, z2 - z1), new THREE3.MeshStandardMaterial({ color: 727088, roughness: 0.15, metalness: 0.7, transparent: true, opacity: 0.9 }));
+  m.rotation.x = -Math.PI / 2;
+  m.position.set((x1 + x2) / 2, y, (z1 + z2) / 2);
+  w.scene.add(m);
+  return m;
+}
+var hills = (x, z) => 0.35 * Math.sin(x * 0.13) * Math.cos(z * 0.07) + 0.25 * Math.sin(z * 0.21 + x * 0.05);
+function battlefield(w, { fires = true } = {}) {
+  w.scene.fog.density = 0.016;
+  terrain(w, { x1: -140, x2: 140, z1: -170, z2: 90, step: 2.5, h: (x, z) => hills(x, z) + Math.max(0, Math.abs(x) - 60) * 0.12 + Math.max(0, z - 50) * 0.1, color: 1053722 });
+  grass(w, { n: 9e3, x1: -60, x2: 60, z1: -120, z2: 40 });
+  mountain(w, 0, 60, -330, 220, 180);
+  mountain(w, -190, 30, -300, 110, 110, false);
+  mountain(w, 200, 25, -290, 120, 100, false);
+  pines(w, 220, (i) => {
+    const s = Math.random() < 0.5 ? -1 : 1;
+    return [s * rnd(65, 120), rnd(-160, 80)];
+  });
+  [[-14, -16, 2.6], [9, -30, 2.2], [-26, -44, 2.8], [24, -8, 2.4], [-8, -62, 2.5], [18, -54, 2.3], [-32, 6, 2.6], [30, -70, 2.7], [5, 18, 2]].forEach(([x, z, r]) => makeRock(w, x, z, r, true));
+  for (let i = 0; i < 40; i++) makeRock(w, rnd(-55, 55), rnd(-110, 35), rnd(0.3, 0.8), false, false);
+  if (fires) {
+    fire(w, -20, -6, { light: 26, smoke: true });
+    fire(w, 22, -26, { light: 26, smoke: true });
+    fire(w, -6, -48, { light: 26 });
+    fire(w, 14, 12, { light: 20, beacon: false });
+  }
+  banner(w, -9, 4, 2771610);
+  banner(w, -4, 6, 2779706);
+  banner(w, 8, 3, 2771610);
+}
+function gateAndCamp(w) {
+  terrain(w, { x1: -120, x2: 120, z1: -140, z2: 40, step: 2.5, h: (x, z) => (z > -4 ? 0 : hills(x, z)) + Math.max(0, Math.abs(x) - 55) * 0.15, color: 1053722 });
+  grass(w, { n: 6e3, x1: -50, x2: 50, z1: -90, z2: -6 });
+  wall(w, 1.5, { width: 80, height: 14, gate: true });
+  mountain(w, 0, 75, 230, 210, 190, false);
+  pines(w, 160, (i) => {
+    const s = Math.random() < 0.5 ? -1 : 1;
+    return [s * rnd(58, 110), rnd(-140, 0)];
+  });
+  [[-16, -46, 3], [14, -50, 3.4], [0, -60, 3.8], [-26, -58, 2.8], [26, -62, 3], [-8, -74, 3.2], [10, -78, 2.8]].forEach(([x, z, s], i) => tent(w, x, z, s, i));
+  fire(w, -6, -36, { light: 28, smoke: true });
+  fire(w, 12, -40, { light: 24 });
+  fire(w, 0, -70, { light: 0, sparks: 40 });
+  [[-12, -22], [-4, -20], [4, -20], [12, -22]].forEach(([x, z]) => torch(w, x, z));
+  torch(w, -3.5, -2.5, { light: 10, h: 2.6 });
+  torch(w, 3.5, -2.5, { light: 10, h: 2.6 });
+  banner(w, -18, -34, 2771610);
+  banner(w, 18, -36, 2779706);
+  banner(w, -2, -42, 2771610);
+  [[-22, -12, 2.4], [24, -16, 2.8], [-34, -40, 2.6]].forEach(([x, z, r]) => makeRock(w, x, z, r));
+}
+
+// src/scenes.js
+var IMG = {};
+function probeImages(ids) {
+  for (const id of window.PLANSZE || []) if (ids.includes(id)) IMG[id] = `assets/plansze/${id}.jpg`;
+}
+var smoothstep = (k) => k * k * (3 - 2 * k);
+function makeCtx(w) {
+  w.fill.distance = 16;
+  const ctx = {
+    w,
+    t: 0,
+    actors: [],
+    tasks: [],
+    duels: [],
+    arrows: [],
+    cam: { p0: V(), p1: V(), l0: V(), l1: V(), t: 0, dur: 1 },
+    look: V(),
+    fill: 22,
+    add(kind, x, z, yaw = 0, anim = "idle", o = {}) {
+      const c = kind === "rider" ? new Rider() : new Char(kind, o);
+      c.root.position.set(x, o.y ?? w.h(x, z), z);
+      c.root.rotation.y = yaw;
+      if (anim === "death") c.warg ? (c.warg.pose("death"), c.gob.pose("death")) : c.pose("death");
+      else if (anim) c.play(anim, { fade: 0 });
+      w.scene.add(c.root);
+      ctx.actors.push(c);
+      return c;
+    },
+    // ruch kamery: z bieżącego miejsca (albo z `from`) do `to` w `dur` sekund
+    camTo(to, look, dur = 6, from = null, lookFrom = null) {
+      const c = ctx.cam;
+      c.p0.copy(from ? V(...from) : camera.position);
+      c.l0.copy(lookFrom ? V(...lookFrom) : ctx.look);
+      c.p1.set(...to);
+      c.l1.set(...look);
+      c.t = 0;
+      c.dur = Math.max(1e-3, dur);
+    },
+    cut(pos, look) {
+      ctx.camTo(pos, look, 1e-3, pos, look);
+      camera.position.set(...pos);
+      ctx.look.set(...look);
+      camera.lookAt(ctx.look);
+    },
+    // chód do punktu (prosty, bez omijania przeszkód)
+    walk(c, x, z, speed = 1.3, then = "idle", anim = "walk") {
+      ctx.tasks = ctx.tasks.filter((t) => t.c !== c);
+      ctx.tasks.push({ c, x, z, speed, then });
+      c.play(anim);
+    },
+    after(s, f) {
+      ctx.tasks.push({ at: ctx.t + s, f });
+    },
+    // para walczących: na zmianę cios i "trafienie"
+    duel(ka, kb, x, z, yaw, o = {}) {
+      const dx = Math.sin(yaw) * 0.85, dz = Math.cos(yaw) * 0.85;
+      const a = ctx.add(ka, x - dx, z - dz, yaw, "guard", o.a), b = ctx.add(kb, x + dx, z + dz, yaw + Math.PI, "guard", o.b);
+      const d = { a, b, t: rnd(0, 1.5), turn: 0 };
+      ctx.duels.push(d);
+      return d;
+    },
+    shoot(from, to, dur, onHit) {
+      const a = makeArrow(0.8);
+      w.scene.add(a);
+      ctx.arrows.push({ a, from: from.clone(), to: to.clone(), t: 0, dur, onHit, arc: from.distanceTo(to) * 0.08 });
+      sfx("bow");
+    }
+  };
+  return ctx;
+}
+function tick(ctx, dt) {
+  const c = ctx.cam;
+  c.t += dt;
+  const k = smoothstep(Math.min(1, c.t / c.dur));
+  camera.position.lerpVectors(c.p0, c.p1, k);
+  ctx.look.lerpVectors(c.l0, c.l1, k);
+  camera.lookAt(ctx.look);
+  tickActors(ctx, dt);
+  ctx.w.focus.copy(ctx.look).setY(0);
+  fillAt(ctx.w, ctx.look, ctx.fill, 2.2);
+  ctx.w.update(dt, ctx.t);
+}
+function tickActors(ctx, dt) {
+  ctx.t += dt;
+  for (const task of [...ctx.tasks]) {
+    if (task.f) {
+      if (ctx.t >= task.at) {
+        ctx.tasks.splice(ctx.tasks.indexOf(task), 1);
+        task.f(ctx);
+      }
+      continue;
+    }
+    const p = task.c.root.position, dx = task.x - p.x, dz = task.z - p.z, d = Math.hypot(dx, dz);
+    if (d < 0.1) {
+      ctx.tasks.splice(ctx.tasks.indexOf(task), 1);
+      if (task.then) task.c.play(task.then);
+      continue;
+    }
+    const s = Math.min(d, task.speed * dt);
+    p.x += dx / d * s;
+    p.z += dz / d * s;
+    p.y = ctx.w.h(p.x, p.z) + (task.c.yOff || 0);
+    task.c.root.rotation.y = angLerp(task.c.root.rotation.y, Math.atan2(dx, dz), damp(8, dt));
+  }
+  for (const d of ctx.duels) {
+    if (d.stop) continue;
+    d.t -= dt;
+    if (d.t <= 0) {
+      const [att, def] = d.turn ? [d.b, d.a] : [d.a, d.b];
+      att.play("attack", { once: true, then: "guard", fade: 0.15 });
+      setTimeout(() => !d.stop && def.play("hit", { once: true, then: "guard", fade: 0.1 }), 380);
+      d.turn ^= 1;
+      d.t = rnd(1.3, 2);
+    }
+  }
+  for (const ar of [...ctx.arrows]) {
+    ar.t += dt;
+    const k2 = Math.min(1, ar.t / ar.dur);
+    const p = V().lerpVectors(ar.from, ar.to, k2);
+    p.y += Math.sin(k2 * Math.PI) * ar.arc;
+    const p2 = V().lerpVectors(ar.from, ar.to, Math.min(1, k2 + 0.02));
+    p2.y += Math.sin(Math.min(1, k2 + 0.02) * Math.PI) * ar.arc;
+    ar.a.position.copy(p);
+    if (k2 < 1) ar.a.lookAt(p2);
+    if (k2 >= 1 && !ar.done) {
+      ar.done = true;
+      ar.a.visible = false;
+      ar.onHit && ar.onHit(ctx);
+    }
+  }
+  for (const a of ctx.actors) a.update(dt);
+}
+function dwarfGroup(ctx, x, z, yaw, { thorin = true, anim = "idle", n = 12, gap = 1.25 } = {}) {
+  const fx = Math.sin(yaw), fz = Math.cos(yaw), rx = Math.cos(yaw), rz = -Math.sin(yaw);
+  const out = { dwarves: [] };
+  if (thorin) out.thorin = ctx.add("thorin", x, z, yaw, anim);
+  for (let i = 0; i < n; i++) {
+    const row = 1 + Math.floor(i / 4), col = i % 4 - 1.5 + row % 2 * 0.3;
+    const px = x - fx * row * gap + rx * col * gap, pz = z - fz * row * gap + rz * col * gap;
+    out.dwarves.push(ctx.add("dwarf", px, pz, yaw + rnd(-0.2, 0.2), anim, { i }));
+  }
+  return out;
+}
+function crowd(ctx, kinds, x, z, yaw, n, spread = 3.5, anim = "idle") {
+  const list = [];
+  for (let i = 0; i < n; i++) {
+    const k = kinds[i % kinds.length];
+    list.push(ctx.add(k, x + rnd(-spread, spread), z + rnd(-spread * 0.5, spread * 0.5), yaw + rnd(-0.25, 0.25), anim, { i }));
+  }
+  return list;
+}
+function archerOnRock(ctx, x, z, yaw, rock = 0) {
+  if (rock) makeRock(ctx.w, x, z, rock, true, false);
+  const top = ctx.w.h(x, z) + (rock ? rock * 0.85 : 1.7);
+  const g = ctx.add("goblin", x, z, yaw, "idle", { y: top });
+  g.orcWeapon = g.model.getObjectByName("Orc_Weapon");
+  if (g.orcWeapon) g.orcWeapon.visible = false;
+  const bow = makeBow(1.15);
+  bow.position.set(-0.3, 0.85, 0.5);
+  g.root.add(bow);
+  const ar = makeArrow(0.8);
+  ar.position.set(-0.3, 0.85, 0.3);
+  g.root.add(ar);
+  g.nocked = ar;
+  return g;
+}
+function shire(w) {
+  w.scene.fog.density = 0.03;
+  terrain(w, { x1: -60, x2: 60, z1: -60, z2: 50, step: 1, color: 1318422, h: (x, z) => hills(x, z) * 0.5 + 5 * Math.exp(-(x * x + (z - 14) * (z - 14)) / 70) });
+  grass(w, { n: 7e3, x1: -25, x2: 25, z1: -25, z2: 25, color: 1847328 });
+  pines(w, 80, () => {
+    const s = Math.random() < 0.5 ? -1 : 1;
+    return [s * rnd(18, 50), rnd(-40, 40)];
+  });
+  const earth = new THREE4.MeshStandardMaterial({ color: 2760728, roughness: 1 });
+  const front = new THREE4.Mesh(new THREE4.BoxGeometry(9, 3.2, 1.6), earth);
+  front.position.set(0, 1.4, 6.6);
+  front.receiveShadow = true;
+  w.scene.add(front);
+  const door = new THREE4.Mesh(new THREE4.CylinderGeometry(1, 1, 0.12, 32), new THREE4.MeshStandardMaterial({ color: 3111482, roughness: 0.6, emissive: 795664 }));
+  door.rotation.x = Math.PI / 2;
+  door.position.set(0, 1.05, 5.82);
+  w.scene.add(door);
+  const knob = new THREE4.Mesh(new THREE4.SphereGeometry(0.08, 12, 8), new THREE4.MeshStandardMaterial({ color: 13936698, metalness: 0.8, roughness: 0.3, emissive: 3811848 }));
+  knob.position.set(0, 1.05, 5.72);
+  w.scene.add(knob);
+  [-2.6, 2.6].forEach((x) => {
+    const win = new THREE4.Mesh(new THREE4.CircleGeometry(0.45, 24), new THREE4.MeshBasicMaterial({ color: 16760944 }));
+    win.position.set(x, 1.4, 5.79);
+    w.scene.add(win);
+    const g = glow(16752704, 2.2, true, 0.7);
+    g.position.set(x, 1.4, 5.6);
+    w.scene.add(g);
+  });
+  const l = new THREE4.PointLight(16756832, 10, 14, 1.6);
+  l.position.set(0, 2.4, 4.6);
+  w.scene.add(l);
+  const path = new THREE4.Mesh(new THREE4.PlaneGeometry(1.6, 26), new THREE4.MeshStandardMaterial({ color: 2762272, roughness: 1 }));
+  path.rotation.x = -Math.PI / 2;
+  path.position.set(0, 0.03, -7);
+  w.scene.add(path);
+  for (let z = -12; z < 4; z += 1.6) [-1.6, 1.6].forEach((x) => {
+    const p = new THREE4.Mesh(new THREE4.BoxGeometry(0.1, 0.8, 0.1), earth);
+    p.position.set(x, w.h(x, z) + 0.4, z);
+    w.scene.add(p);
+  });
+  w.h = () => 0.02;
+}
+function laketown(w) {
+  w.scene.fog.color.setHex(1314830);
+  w.scene.fog.density = 0.028;
+  water(w, -200, 200, -200, 200, 0);
+  const char = new THREE4.MeshStandardMaterial({ color: 1380364, roughness: 1, emissive: 2099714 });
+  const wood = new THREE4.MeshStandardMaterial({ color: 2760728, roughness: 1 });
+  w.h = () => 1;
+  for (let i = 0; i < 22; i++) {
+    const x = rnd(-26, 26), z = rnd(-40, -16), sx = rnd(3, 6), sz = rnd(3, 5);
+    for (const [ox, oz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      const p = new THREE4.Mesh(new THREE4.CylinderGeometry(0.12, 0.12, 2, 5), wood);
+      p.position.set(x + ox * sx / 2.3, 0, z + oz * sz / 2.3);
+      w.scene.add(p);
+    }
+    const fl = new THREE4.Mesh(new THREE4.BoxGeometry(sx, 0.2, sz), char);
+    fl.position.set(x, 1, z);
+    w.scene.add(fl);
+    const hgt = rnd(1, 3.5);
+    const wall1 = new THREE4.Mesh(new THREE4.BoxGeometry(sx, hgt, 0.2), char);
+    wall1.position.set(x, 1 + hgt / 2, z - sz / 2);
+    wall1.rotation.z = rnd(-0.15, 0.15);
+    w.scene.add(wall1);
+    if (i % 2) {
+      const wall2 = new THREE4.Mesh(new THREE4.BoxGeometry(0.2, hgt * 0.7, sz), char);
+      wall2.position.set(x + sx / 2, 1 + hgt * 0.35, z);
+      w.scene.add(wall2);
+    }
+  }
+  [[-10, -24, 30], [8, -30, 26], [18, -20, 0], [-20, -34, 0], [0, -38, 0]].forEach(([x, z, l], i) => fire(w, x, z, { light: l, dist: 40, beacon: true, smoke: i < 3, scale: 1.6, sparks: 80 }));
+  const pier = new THREE4.Mesh(new THREE4.BoxGeometry(2, 0.2, 14), wood);
+  pier.position.set(0, 0.9, -1);
+  w.scene.add(pier);
+  const dark = new THREE4.MeshStandardMaterial({ color: 657932, roughness: 0.8 });
+  const body = new THREE4.Mesh(new THREE4.SphereGeometry(1, 16, 10), dark);
+  body.scale.set(5, 2.4, 13);
+  body.position.set(26, 0, -46);
+  body.rotation.y = 0.5;
+  w.scene.add(body);
+  const wing = new THREE4.Mesh(new THREE4.ConeGeometry(5, 9, 3), dark);
+  wing.position.set(23, 3, -44);
+  wing.rotation.set(0.3, 0.4, -0.6);
+  w.scene.add(wing);
+  mountain(w, -40, 50, -320, 180, 150);
+}
+function hall(w) {
+  w.scene.fog.color.setHex(657157);
+  w.scene.fog.density = 0.035;
+  w.hemi.intensity = 0.5;
+  w.moon.intensity = 0;
+  w.scene.background = new THREE4.Color(328707);
+  const stone = new THREE4.MeshStandardMaterial({ color: 1841172, roughness: 0.9 });
+  const floor = new THREE4.Mesh(new THREE4.PlaneGeometry(80, 80), stone);
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  w.scene.add(floor);
+  for (let z = -4; z >= -44; z -= 8) [-9, 9].forEach((x) => {
+    const p = new THREE4.Mesh(new THREE4.BoxGeometry(2, 18, 2), stone);
+    p.position.set(x, 9, z);
+    w.scene.add(p);
+  });
+  const gold = new THREE4.MeshStandardMaterial({ color: 13145642, metalness: 0.85, roughness: 0.35, emissive: 3811336 });
+  const heaps = [[0, -14, 6, 2.6], [-5.5, -21, 5, 2.2], [6, -22, 5.5, 2.4], [0, -30, 8, 3.4]];
+  heaps.forEach(([x, z, r, h]) => {
+    const m = new THREE4.Mesh(new THREE4.ConeGeometry(r, h, 24, 1), gold);
+    m.position.set(x, h / 2, z);
+    w.scene.add(m);
+  });
+  const coins = new THREE4.InstancedMesh(new THREE4.CylinderGeometry(0.06, 0.06, 0.015, 8), gold, 900), o = new THREE4.Object3D();
+  for (let i = 0; i < 900; i++) {
+    const [x, z, r, h] = heaps[i % 4], a = rnd(0, 6.3), d = rnd(0, r * 1.2);
+    o.position.set(x + Math.cos(a) * d, Math.max(0.01, h * (1 - d / r)) + 0.01, z + Math.sin(a) * d);
+    o.rotation.set(rnd(-1, 1), 0, rnd(-1, 1));
+    o.updateMatrix();
+    coins.setMatrixAt(i, o.matrix);
+  }
+  w.scene.add(coins);
+  const l1 = new THREE4.PointLight(16756832, 40, 40, 1.4);
+  l1.position.set(0, 7, -8);
+  w.scene.add(l1);
+  const l2 = new THREE4.PointLight(16752704, 25, 30, 1.4);
+  l2.position.set(-6, 5, -24);
+  w.scene.add(l2);
+  const sparks = Array.from({ length: 30 }, () => {
+    const s = glow(16769184, 0.3);
+    const [x, z, r, h] = heaps[Math.floor(rnd(0, 4))], d = rnd(0, r);
+    s.position.set(x + rnd(-d, d), h * (1 - d / r) + 0.1, z + rnd(-1, 1));
+    w.scene.add(s);
+    return s;
+  });
+  w.ups.push((dt, t) => sparks.forEach((s, i) => s.material.opacity = Math.max(0, Math.sin(t * 2 + i * 1.7))));
+  [[-8, -6], [8, -6], [-8, -18], [8, -18]].forEach(([x, z]) => {
+    const f = glow(16752704, 1.2);
+    f.position.set(x * 0.85, 3.5, z);
+    w.scene.add(f);
+  });
+  w.h = () => 0;
+}
+function tentInside(w) {
+  w.scene.fog.color.setHex(656900);
+  w.scene.fog.density = 0.02;
+  w.hemi.intensity = 0.35;
+  w.moon.intensity = 0;
+  w.scene.background = new THREE4.Color(328450);
+  const cloth = new THREE4.MeshStandardMaterial({ color: 4863008, roughness: 1, side: THREE4.BackSide });
+  const t = new THREE4.Mesh(new THREE4.ConeGeometry(7, 6.5, 8, 1, true), cloth);
+  t.position.y = 3.25;
+  w.scene.add(t);
+  const floor = new THREE4.Mesh(new THREE4.CircleGeometry(7, 24), new THREE4.MeshStandardMaterial({ color: 2760726, roughness: 1 }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  w.scene.add(floor);
+  const wood = new THREE4.MeshStandardMaterial({ color: 3811352, roughness: 0.9 });
+  const add = (geo, mat, x, y, z) => {
+    const m = new THREE4.Mesh(geo, mat);
+    m.position.set(x, y, z);
+    m.castShadow = m.receiveShadow = true;
+    w.scene.add(m);
+    return m;
+  };
+  add(new THREE4.BoxGeometry(1.3, 0.35, 2.4), wood, 1.8, 0.18, -1);
+  add(new THREE4.BoxGeometry(1.15, 0.15, 2.2), new THREE4.MeshStandardMaterial({ color: 12101768, roughness: 1 }), 1.8, 0.43, -1);
+  add(new THREE4.BoxGeometry(0.7, 0.22, 0.5), new THREE4.MeshStandardMaterial({ color: 14735560, roughness: 1 }), 1.8, 0.61, -1.66);
+  add(new THREE4.BoxGeometry(1.4, 0.6, 0.12), wood, 1.8, 0.5, -2.2);
+  const blanket = new THREE4.Mesh(
+    new THREE4.CylinderGeometry(0.66, 0.66, 1.42, 20, 1, true, -Math.PI / 2, Math.PI),
+    new THREE4.MeshStandardMaterial({ color: 2898522, roughness: 1, side: THREE4.DoubleSide })
+  );
+  blanket.rotation.x = -Math.PI / 2;
+  blanket.scale.z = 0.62;
+  blanket.position.set(1.8, 0.5, -0.4);
+  blanket.receiveShadow = true;
+  w.scene.add(blanket);
+  [-0.4 - 0.71, -0.4 + 0.71].forEach((z) => {
+    const cap = new THREE4.Mesh(new THREE4.CircleGeometry(0.66, 20, 0, Math.PI), blanket.material);
+    cap.scale.y = 0.62;
+    cap.position.set(1.8, 0.5, z);
+    w.scene.add(cap);
+  });
+  add(new THREE4.BoxGeometry(0.9, 0.7, 0.9), wood, -0.4, 0.35, -2.4);
+  add(new THREE4.CylinderGeometry(0.04, 0.04, 0.2, 8), new THREE4.MeshStandardMaterial({ color: 15657168, emissive: 3354656 }), -0.4, 0.8, -2.4);
+  const fl = glow(16756816, 0.5);
+  fl.position.set(-0.4, 0.95, -2.4);
+  w.scene.add(fl);
+  const cl = new THREE4.PointLight(16754768, 14, 12, 1.5);
+  cl.position.set(-0.4, 1.2, -2.3);
+  cl.castShadow = true;
+  cl.shadow.mapSize.set(512, 512);
+  w.scene.add(cl);
+  const cl2 = new THREE4.PointLight(16754768, 6, 10, 1.5);
+  cl2.position.set(3.2, 1.5, 0.8);
+  w.scene.add(cl2);
+  add(new THREE4.BoxGeometry(1, 0.08, 2), new THREE4.MeshStandardMaterial({ color: 5917232, roughness: 1 }), -2.2, 0.04, 0.6);
+  w.ups.push((dt, t2) => {
+    cl.intensity = 14 * (0.92 + Math.sin(t2 * 9) * 0.05 + Math.sin(t2 * 23) * 0.03);
+    fl.scale.set(0.5, 0.7 + Math.sin(t2 * 13) * 0.08, 1);
+  });
+  w.h = () => 0;
+}
+function dragon(w, cx, cy, cz, r) {
+  const m = new THREE4.MeshBasicMaterial({ color: 329224, fog: false, side: THREE4.DoubleSide });
+  const g = new THREE4.Group();
+  const body = new THREE4.Mesh(new THREE4.ConeGeometry(2.2, 22, 6), m);
+  body.rotation.x = Math.PI / 2;
+  g.add(body);
+  const neck = new THREE4.Mesh(new THREE4.ConeGeometry(1, 9, 5), m);
+  neck.rotation.x = -Math.PI / 2 + 0.2;
+  neck.position.set(0, 0.6, 13);
+  g.add(neck);
+  const wingGeo = new THREE4.BufferGeometry().setAttribute("position", new THREE4.Float32BufferAttribute([0, 0, 4, 0, 0, -6, 20, 0, -2, 0, 0, 4, 20, 0, -2, 14, 0, 6], 3));
+  const wl = new THREE4.Mesh(wingGeo, m), wr = new THREE4.Mesh(wingGeo, m);
+  wr.scale.x = -1;
+  g.add(wl, wr);
+  const eye = glow(16736288, 3, false, 0.9);
+  eye.position.set(0, 1.4, 17);
+  g.add(eye);
+  w.scene.add(g);
+  w.ups.push((dt, t) => {
+    const a = t * 0.12;
+    g.position.set(cx + Math.cos(a) * r, cy + Math.sin(t * 0.5) * 6, cz + Math.sin(a) * r);
+    g.rotation.set(0, -a, -0.35);
+    const f = Math.sin(t * 2.2) * 0.6;
+    wl.rotation.z = f;
+    wr.rotation.z = -f;
+  });
+}
+var N = (text, fn, cam) => ({ who: null, text, fn, cam });
+var L = (who, text, fn, cam) => ({ who, text, fn, cam });
+var INTRO = [
+  "Bilbo Baggins to hobbit, kt\xF3ry lubi spok\xF3j, wygodny fotel i drugie \u015Bniadanie. Pewnego dnia wyrusza jednak w wielk\u0105 podr\xF3\u017C z trzynastoma krasnoludami. Ich przyw\xF3dc\u0105 jest Thorin D\u0119bowa Tarcza.",
+  "Krasnoludy chc\u0105 odzyska\u0107 sw\xF3j dom \u2014 Samotn\u0105 G\xF3r\u0119 i ogromny skarb, kt\xF3ry zabra\u0142 im smok Smaug.",
+  "Smaug nie \u017Cyje. Zabi\u0142 go \u0142ucznik Bard z Miasta na Jeziorze. Rozgniewany smok przed \u015Bmierci\u0105 spali\u0142 ca\u0142e miasto.",
+  "Najcenniejszym klejnotem skarbu jest Arcyklejnot \u2014 Serce G\xF3ry. Thorin pragnie go bardziej ni\u017C ca\u0142ego z\u0142ota. Nie wie, \u017Ce Bilbo znalaz\u0142 kamie\u0144 i ukry\u0142 go.",
+  "Pod G\xF3r\u0119 przychodz\u0105 ludzie Barda i elfy z Mrocznej Puszczy. Ludzie chc\u0105 cz\u0119\u015Bci skarbu, aby odbudowa\u0107 spalone miasto. Thorin odmawia i zamyka si\u0119 w G\xF3rze.",
+  "Bilbo widzi, \u017Ce chciwo\u015B\u0107 zmienia Thorina. Wojna jest coraz bli\u017Cej. Bilbo ma w kieszeni Arcyklejnot\u2026"
+];
+function gateTalk(ctx, { gem = false } = {}) {
+  const a = ctx.a = {};
+  const g = dwarfGroup(ctx, 0, -2.2, Math.PI, { n: 8, gap: 1.2 });
+  a.thorin = g.thorin;
+  a.bilbo = ctx.add("bilbo", 1.8, -2.6, Math.PI + 0.3);
+  a.bard = ctx.add("bard", 0, -7.4, 0);
+  a.king = ctx.add("elfKing", -2.2, -7.7, 0.1);
+  crowd(ctx, ["human", "elf"], 0, -11.2, 0, 10, 4.5, "guard");
+  if (gem) {
+    a.gem = makeGem();
+    a.bard.hold(a.gem, "WristR", V(0, 0, 0.1));
+    a.gem.visible = false;
+  }
+}
+function battleAllies(ctx, { dwarves = true } = {}) {
+  ctx.duel("human", "goblin", -10, -26, 0.3);
+  ctx.duel("elf", "goblin", 8, -24, -0.4);
+  ctx.duel("human", "goblin", 16, -34, 0);
+  if (dwarves) ctx.duel("dwarf", "goblin", -4, -32, 0.1, { a: { i: 3 } });
+}
+function riders(ctx, n, z0 = -60, toZ = -20) {
+  const list = [];
+  for (let i = 0; i < n; i++) {
+    const x = rnd(-30, 30), z = z0 - rnd(0, 25);
+    const r = ctx.add("rider", x, z, 0, "run");
+    ctx.walk(r, x * 0.6, toZ - rnd(0, 10), rnd(6, 8), "idle", "run");
+    list.push(r);
+  }
+  return list;
+}
+function archerShot(ctx, victimKind, foeKind = "goblin") {
+  const a = ctx.a = {};
+  battleAllies(ctx, { dwarves: victimKind === "thorin" });
+  const d = ctx.duel(victimKind, foeKind, 5, -16, 0.6);
+  a.victim = d.a;
+  a.archer = archerOnRock(ctx, 9.5, -21.5, Math.atan2(5 - 9.5, -16 - -21.5), 1.3);
+  const hp = a.archer.root.position;
+  const vx = 5 - hp.x, vz = -16 - hp.z, vl = Math.hypot(vx, vz), fx = vx / vl, fz = vz / vl, rx = -fz, rz = fx;
+  const vp0 = a.victim.root.position;
+  ctx.cut([hp.x - fx * 1.8 + rx * 1.5, hp.y + 1.25, hp.z - fz * 1.8 + rz * 1.5], [vp0.x, vp0.y + 1, vp0.z]);
+  ctx.camTo([hp.x - fx * 1.5 + rx * 0.85, hp.y + 1.15, hp.z - fz * 1.5 + rz * 0.85], [vp0.x, vp0.y + 1, vp0.z], 6);
+  ctx.fill = 26;
+  a.fire = () => {
+    a.archer.play("shoot", { once: true, then: "idle" });
+    a.archer.nocked.visible = false;
+    d.stop = true;
+    a.victim.play("guard");
+    const vp = a.victim.root.position;
+    ctx.camTo([hp.x - fx * 2.6 + rx * 2.2, hp.y + 2.2, hp.z - fz * 2.6 + rz * 2.2], [vp.x, vp.y + 0.8, vp.z], 1.3);
+    ctx.shoot(V(hp.x, hp.y + 1, hp.z), V(vp.x, vp.y + a.victim.K.h * 0.7, vp.z), 1.3, () => {
+      sfx("arrow_hit");
+      sfx("fall", { delay: 0.5 });
+      a.victim.play("death", { once: true, fade: 0.1 });
+      d.b.play("idle");
+      const bx = d.b.root.position.x - vp.x, bz = d.b.root.position.z - vp.z, bl = Math.hypot(bx, bz) || 1;
+      ctx.camTo([vp.x - bx / bl * 2.6 - bz / bl * 1.2, vp.y + 1.7, vp.z - bz / bl * 2.6 + bx / bl * 1.2], [vp.x, vp.y + 0.3, vp.z], 3);
+    });
+  };
+}
+var SCENES = {
+  // laboratorium postaci (poza fabułą, tylko do strojenia i podglądu)
+  "lab-postacie": {
+    loc: (w) => {
+      battlefield(w, { fires: false });
+      w.hemi.intensity = 3;
+      w.moon.intensity = 2;
+      w.scene.fog.density = 4e-3;
+    },
+    setup(ctx) {
+      const L2 = (k, x, anim, o) => ctx.add(k, x, 0, 0, anim, o);
+      const b1 = L2("bard", -9, "aim");
+      b1.hold(makeBow(1.25), "WristR", V(0, 0, 0.1));
+      const b2 = L2("bard", -7, "idle");
+      b2.hold(makeBow(1.25), "WristL", V(0, 0, 0.08));
+      L2("thorin", -5, "attack");
+      L2("dain", -3.6, "idle");
+      L2("elfKing", -2, "idle");
+      L2("dwarf", -0.6, "idle", { i: 1 });
+      L2("ironDwarf", 0.6, "idle");
+      L2("human", 2, "idle", { i: 2 });
+      L2("elf", 3.4, "guard", { i: 1 });
+      L2("bilbo", 4.8, "idle");
+      ctx.add("rider", 8, 0, -Math.PI / 2, "idle");
+      archerOnRock(ctx, 11, 0, 0).root.position.y = 0;
+      const t = ctx.add("thorin", 14, 0, 0, "death");
+      ctx.a = { t };
+      ctx.cut([2.5, 2.2, 13], [2.5, 1, 0]);
+    },
+    lines: [N("Laboratorium postaci")]
+  },
+  "intro-1": {
+    music: "main",
+    amb: { night: 0.8 },
+    loc: shire,
+    setup(ctx) {
+      ctx.add("bilbo", 0.9, 4.7, Math.PI);
+      const g = dwarfGroup(ctx, 0, -4, 0, { gap: 1.15 });
+      [g.thorin, ...g.dwarves].forEach((c) => {
+        const p = c.root.position;
+        ctx.walk(c, p.x, p.z + 2.2, 1);
+      });
+      ctx.camTo([1.2, 2.5, -6.2], [0.3, 1.2, 4.5], 14, [1.8, 3.1, -10], [0.3, 1.1, 4.5]);
+    },
+    lines: [N(INTRO[0])]
+  },
+  "intro-2": {
+    music: "main",
+    amb: { night: 0.8 },
+    loc: (w) => {
+      battlefield(w, { fires: false });
+      dragon(w, 0, 175, -330, 120);
+    },
+    setup(ctx) {
+      ctx.add("bilbo", 1.5, 28.5, Math.PI);
+      dwarfGroup(ctx, 0, 27, Math.PI);
+      ctx.camTo([1, 3.4, 34.5], [0, 40, -300], 14, [2.5, 1.6, 38], [0, 25, -300]);
+      ctx.fill = 16;
+    },
+    lines: [N(INTRO[1])]
+  },
+  "intro-3": {
+    music: "main",
+    amb: { fire: 0.8, river: 0.3 },
+    loc: laketown,
+    setup(ctx) {
+      const b = ctx.add("bard", 0, -6.5, Math.PI, "idle", { y: 1 });
+      b.hold(makeBow(1.2), "WristR", V(0, 0, 0.1));
+      ["human", "human", "human"].forEach((k, i) => ctx.add(k, -0.6 + i * 0.4, -9.5 - i * 1.1, Math.PI + rnd(-0.3, 0.3), "idle", { i, y: 1 }));
+      ctx.camTo([1.8, 2.2, -3.2], [0, 2.4, -16], 14, [3.2, 2.5, 0.5], [0, 2, -10]);
+      ctx.fill = 8;
+    },
+    lines: [N(INTRO[2])]
+  },
+  "intro-4": {
+    music: "main",
+    amb: {},
+    loc: hall,
+    setup(ctx) {
+      const b = ctx.add("bilbo", 1.2, -2, 0);
+      const gem = makeGem();
+      b.hold(gem, "WristR", V(0, 0.05, 0.08));
+      ctx.add("thorin", 0, -14, 0, "idle", { y: 2.2 });
+      ctx.camTo([3.4, 2.4, 3.6], [0, 1.6, -10], 14, [1.9, 0.9, -0.3], [1.1, 0.7, -2]);
+      ctx.fill = 6;
+    },
+    lines: [N(INTRO[3])]
+  },
+  "intro-5": {
+    music: "main",
+    amb: { night: 0.6, fire: 0.5 },
+    loc: gateAndCamp,
+    setup(ctx) {
+      ctx.add("bard", 0.6, -14, 0);
+      ctx.add("elfKing", -1.8, -14.5, 0.1);
+      crowd(ctx, ["human", "elf"], 0, -18.5, 0, 12, 5, "guard");
+      ctx.add("thorin", 0.2, 0.6, Math.PI, "idle", { y: 14 });
+      [-3, 3.4, 5.6].forEach((x, i) => ctx.add("dwarf", x, 0.7, Math.PI, "idle", { y: 14, i }));
+      const tl = new THREE4.PointLight(16751168, 14, 10, 1.6);
+      tl.position.set(1.5, 16, -0.6);
+      ctx.w.scene.add(tl);
+      const tg = glow(16752704, 1.4);
+      tg.position.set(1.5, 15.8, -0.3);
+      ctx.w.scene.add(tg);
+      ctx.camTo([3, 2, -18], [0, 9, 0], 14, [6, 2.6, -22], [0, 6, -4]);
+      ctx.fill = 12;
+    },
+    lines: [N(INTRO[4])]
+  },
+  "intro-6": {
+    music: "main",
+    amb: { night: 0.7, fire: 0.2 },
+    loc: gateAndCamp,
+    setup(ctx) {
+      const b = ctx.add("bilbo", 7.8, 1.1, Math.PI, "idle", { y: 14 });
+      const gem = makeGem();
+      b.hold(gem, "WristR", V(0, 0.05, 0.08));
+      const th = ctx.add("thorin", -3.5, 1.6, Math.PI / 2, "walk", { y: 14 });
+      th.yOff = 14;
+      ctx.walk(th, 2, 1.6, 0.8);
+      ctx.camTo([8.6, 15.5, 2.6], [7.4, 13.2, -10], 14, [9.2, 15.9, 3.6], [7.2, 13.5, -10]);
+      ctx.fill = 10;
+    },
+    keep: true,
+    lines: [N(INTRO[5])]
+  },
+  // ---------- Zakończenie 1 ----------
+  "z1-przekazanie": {
+    music: "main",
+    amb: { night: 0.5, fire: 0.9 },
+    loc: gateAndCamp,
+    setup(ctx) {
+      const a = ctx.a = {};
+      a.bard = ctx.add("bard", -6, -32.4, Math.PI);
+      a.king = ctx.add("elfKing", -8.4, -33.2, Math.PI - 0.5);
+      a.bilbo = ctx.add("bilbo", -5.6, -29.6, 0);
+      ctx.add("elf", -4, -27.6, -0.6, "guard");
+      ctx.add("elf", -7.4, -27.6, 0.5, "guard");
+      crowd(ctx, ["human", "elf"], -6, -40, 0, 6, 3);
+      a.gem = makeGem();
+      a.bilbo.hold(a.gem, "WristR", V(0, 0.05, 0.08));
+      a.gem.visible = false;
+      ctx.camTo([-3.4, 1.6, -28.6], [-6.2, 1.2, -31.6], 10, [-2.4, 2, -26.6], [-6, 1.2, -32]);
+    },
+    lines: [
+      N("Elfy prowadz\u0105 Bilba do ogniska. Tam czekaj\u0105 Bard i Kr\xF3l Le\u015Bnych Elf\xF3w."),
+      L("Bilbo", "Dobry wiecz\xF3r. Jestem Bilbo Baggins, towarzysz Thorina. Przynios\u0142em wam co\u015B bardzo cennego.", (ctx) => ctx.a.bilbo.play("talk", { once: true, then: "idle" })),
+      L("Bilbo", "To jest Arcyklejnot \u2014 Serce G\xF3ry. Thorin pragnie go bardziej ni\u017C ca\u0142ego z\u0142ota.", (ctx) => {
+        ctx.a.gem.visible = true;
+        ctx.camTo([-4.8, 1.25, -28.9], [-5.7, 0.9, -30.4], 3);
+      }),
+      L("Bard", "Dlaczego nam go dajesz? Przecie\u017C jeste\u015B przyjacielem krasnolud\xF3w.", (ctx) => ctx.camTo([-4.4, 1.9, -30.4], [-6.1, 1.6, -32.4], 2.5)),
+      L("Bilbo", "Nie chc\u0119 wojny. Z tym kamieniem b\u0119dziecie mogli spokojnie porozmawia\u0107 z Thorinem.", (ctx) => {
+        const { bilbo, bard, gem } = ctx.a;
+        bilbo.unhold(gem);
+        bard.hold(gem, "WristR", V(0, 0, 0.1));
+        bard.play("talk", { once: true, then: "idle" });
+        ctx.camTo([-3.2, 1.6, -28.6], [-6.4, 1.2, -31.8], 3);
+      }),
+      L("Kr\xF3l Elf\xF3w", "Jeste\u015B odwa\u017Cniejszy ni\u017C wielu wojownik\xF3w, Bilbo Bagginsie. Dzi\u0119kujemy ci.", (ctx) => ctx.a.king.play("wave", { once: true, then: "idle" })),
+      L("Bard", "Dzi\u0119kujemy, Bilbo. Ludzie z Miasta na Jeziorze nie zapomn\u0105 ci tego.")
+    ]
+  },
+  "z1-negocjacje": {
+    music: "main",
+    amb: { night: 0.6, fire: 0.5 },
+    loc: gateAndCamp,
+    setup(ctx) {
+      gateTalk(ctx, { gem: true });
+      ctx.camTo([5.4, 1.8, -5.6], [-0.6, 1.2, -4.9], 8, [7.2, 2.2, -6.4], [-0.6, 1.3, -4.9]);
+    },
+    lines: [
+      N("Nast\u0119pnego dnia ludzie i elfy przychodz\u0105 pod bram\u0119 G\xF3ry."),
+      L("Bard", "Thorinie! Potrzebujemy cz\u0119\u015Bci skarbu, aby odbudowa\u0107 Miasto na Jeziorze.", (ctx) => ctx.a.bard.play("talk", { once: true, then: "idle" })),
+      L("Thorin", "Nie dostaniecie ani jednej monety! Odejd\u017Acie spod mojej G\xF3ry!", (ctx) => {
+        ctx.a.thorin.play("no", { once: true, then: "idle" });
+        ctx.camTo([1.8, 1.7, -5.4], [0, 1.2, -2.2], 2.5);
+      }),
+      L("Bard", "Mo\u017Ce zmienisz zdanie, gdy zobaczysz to.", (ctx) => {
+        ctx.a.gem.visible = true;
+        ctx.a.bard.play("wave", { once: true, then: "idle" });
+        ctx.camTo([-1.6, 1.9, -4.4], [0, 1.6, -7.4], 2.5);
+      }),
+      L("Thorin", "Arcyklejnot?! Serce G\xF3ry! Sk\u0105d go macie? To skarb mojego rodu!", (ctx) => ctx.camTo([1.5, 1.5, -5.6], [0.4, 1.1, -2.2], 2.5)),
+      L("Bilbo", "Ja im go da\u0142em, Thorinie. Wzi\u0105\u0142em go jako moj\u0105 cz\u0119\u015B\u0107 skarbu.", (ctx) => {
+        ctx.walk(ctx.a.bilbo, 1, -3.4, 1);
+        ctx.camTo([2.8, 1.3, -6.2], [0.9, 0.8, -3.2], 2.5);
+      }),
+      L("Thorin", "Ty\u2026 zdrajco! Z\u0142odzieju!", (ctx) => {
+        const { thorin, bilbo } = ctx.a;
+        thorin.face(bilbo.pos.x, bilbo.pos.z);
+        bilbo.face(thorin.pos.x, thorin.pos.z);
+        const shake = (n) => {
+          if (n <= 0) return;
+          thorin.play("punch", { once: true, then: "idle", fade: 0.1 });
+          setTimeout(() => {
+            bilbo.play("hit", { once: true, then: "idle", fade: 0.1 });
+            sfx("thump", { vol: 0.5, rate: 1.3 });
+          }, 300);
+          setTimeout(() => shake(n - 1), 900);
+        };
+        shake(3);
+        ctx.camTo([-2, 1.5, -5.2], [0.5, 1, -2.8], 1.5);
+      }),
+      L("Bilbo", "Pu\u015B\u0107 mnie! Chcia\u0142em tylko, \u017Ceby nie by\u0142o wojny!"),
+      N("Thorin puszcza Bilba. Krasnoludy patrz\u0105 na hobbita z gniewem.", (ctx) => ctx.camTo([6, 2.4, -7.5], [0, 1.2, -3.5], 5))
+    ]
+  },
+  "z1-atak": {
+    music: "main",
+    amb: { night: 0.5, fire: 0.3 },
+    loc: battlefield,
+    setup(ctx) {
+      crowd(ctx, ["human", "elf"], 0, -6, Math.PI, 12, 6, "guard");
+      const g = dwarfGroup(ctx, 7, -3, Math.PI, { n: 8, anim: "guard" });
+      ctx.a = { thorin: g.thorin };
+      ctx.add("bard", -1.5, -3.5, Math.PI, "guard");
+      riders(ctx, 8, -46, -24);
+      ctx.camTo([3.5, 1.4, -18], [-2, 1.3, -45], 6, [5, 1.8, -21], [-2, 1.2, -50]);
+      sfx("howl");
+    },
+    lines: [
+      N("Nagle ziemia dr\u017Cy. Z p\xF3\u0142nocy nadci\u0105gaj\u0105 gobliny na wargach!"),
+      L("Bard", "Gobliny! Ludzie, elfy i krasnoludy \u2014 walczmy razem!", (ctx) => ctx.camTo([-0.2, 2.2, -0.2], [-1.5, 1.7, -3.5], 2.5)),
+      L("Thorin", "Dzi\u015B krasnoludy walcz\u0105 rami\u0119 w rami\u0119 z lud\u017Ami i elfami!", (ctx) => ctx.camTo([8.2, 1.6, -0.8], [7, 1.1, -3], 2.5)),
+      N("Ludzie, elfy i krasnoludy razem staj\u0105 do walki z goblinami i wargami.", (ctx) => ctx.camTo([12, 6, 10], [0, 0, -30], 5))
+    ]
+  },
+  "z1-kamien": {
+    music: "main",
+    amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    loc: battlefield,
+    setup(ctx) {
+      battleAllies(ctx);
+      const b = ctx.a = { bilbo: ctx.add("bilbo", -10, -11, Math.PI - 0.4) };
+      b.stone = new THREE4.Mesh(new THREE4.DodecahedronGeometry(0.28), new THREE4.MeshStandardMaterial({ color: 3816004, flatShading: true }));
+      b.stone.visible = false;
+      ctx.w.scene.add(b.stone);
+      ctx.camTo([-8.6, 1.4, -8.4], [-10.4, 1, -12.6], 10, [-7, 2, -6], [-10.5, 1.2, -14]);
+    },
+    lines: [
+      N("Bilbo nie umie walczy\u0107. Stoi z boku i patrzy na bitw\u0119."),
+      L("Bilbo", "Ojej\u2026 Jak ich wielu!", (ctx) => ctx.a.bilbo.play("no", { once: true, then: "idle" })),
+      N("Nagle spadaj\u0105cy kamie\u0144 trafia Bilba w g\u0142ow\u0119.", (ctx) => {
+        const { bilbo, stone } = ctx.a, p = bilbo.root.position;
+        stone.visible = true;
+        stone.position.set(p.x + 1.5, p.y + 9, p.z - 1);
+        const t0 = ctx.t, from = stone.position.clone();
+        ctx.w.ups.push(() => {
+          const k = Math.min(1, (ctx.t - t0) / 0.9);
+          if (k < 1) {
+            stone.position.lerpVectors(from, V(p.x, p.y + 1.15, p.z), k * k);
+            stone.rotation.x += 0.2;
+          } else if (!stone.hit) {
+            stone.hit = true;
+            sfx("thump");
+            sfx("fall", { delay: 0.4, vol: 0.6 });
+            bilbo.play("death", { once: true, fade: 0.1 });
+            stone.position.set(p.x + 0.6, p.y + 0.2, p.z + 0.4);
+          }
+        });
+      }),
+      N("Bilbo pada na ziemi\u0119 i traci przytomno\u015B\u0107.", (ctx) => ctx.camTo([-8.8, 2.6, -9.5], [-10, 0.3, -11.5], 4))
+    ]
+  },
+  "z1-goblin-strzela": {
+    music: "main",
+    amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    loc: battlefield,
+    setup(ctx) {
+      archerShot(ctx, "thorin");
+    },
+    lines: [
+      N("Na skale stoi goblin z \u0142ukiem. Celuje w Thorina\u2026"),
+      N("Goblin strzela!", (ctx) => ctx.a.fire()),
+      N("Strza\u0142a goblina trafia Thorina. Thorin pada na ziemi\u0119.")
+    ]
+  },
+  "z1-bard-krzyk": {
+    music: "sad",
+    amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    loc: battlefield,
+    setup(ctx) {
+      battleAllies(ctx);
+      ctx.add("thorin", 5, -16, 0.6, "death");
+      const b = ctx.add("bard", -2, -9, 0);
+      b.hold(makeBow(1.2), "WristR", V(0, 0, 0.1));
+      ctx.walk(b, 3.3, -14.4, 3.2, "idle", "run");
+      ctx.camTo([3.2, 1.9, -17.6], [2, 1.7, -13], 3, [1.5, 1.9, -18], [0, 1.6, -10]);
+    },
+    fadeOut: 2500,
+    lines: [L("Bard", "Nieeeeee, Thoriiin\u2026")]
+  },
+  "z1-thorin-lozko": {
+    music: "sad",
+    amb: { fire: 0.2 },
+    loc: tentInside,
+    setup(ctx) {
+      const a = ctx.a = {};
+      a.thorin = ctx.add("thorin", 1.8, -0.1, 0, "Idle_Neutral", { y: 0.56 });
+      a.thorin.root.rotation.x = -Math.PI / 2 + 0.13;
+      a.thorin.cur.timeScale = 0.35;
+      if (a.thorin.sword) a.thorin.sword.visible = false;
+      a.bilbo = ctx.add("bilbo", -2.2, 0.6, 0, "death", { y: 0.08 });
+      ctx.camTo([-0.4, 2, 2.4], [-1.6, 0.4, 0.4], 6, [0.2, 2.6, 3.6], [-1.8, 0.2, 0.4]);
+      ctx.fill = 4;
+    },
+    lines: [
+      N("Bilbo budzi si\u0119 w namiocie. Bitwa si\u0119 sko\u0144czy\u0142a.", (ctx) => ctx.after(1, () => {
+        ctx.a.bilbo.root.position.y = 0;
+        ctx.a.bilbo.play("idle", { fade: 1.2 });
+        ctx.after(1.6, () => ctx.walk(ctx.a.bilbo, 0.9, -0.7, 1));
+      })),
+      L("Bilbo", "Thorinie!", (ctx) => ctx.camTo([-0.6, 1.6, 0.9], [1.6, 0.6, -1.2], 3)),
+      L("Thorin", "Bilbo\u2026 Dobrze, \u017Ce jeste\u015B. Chc\u0119 ci\u0119 przeprosi\u0107 za moje s\u0142owa i za m\xF3j gniew.", (ctx) => {
+        ctx.walk(ctx.a.bilbo, 0.9, -0.7, 1);
+        ctx.camTo([3.5, 1.35, -1], [1.6, 0.7, -1.3], 3);
+      }),
+      L("Thorin", "Nie jeste\u015B zdrajc\u0105, przyjacielu. Post\u0105pi\u0142e\u015B uczciwie i m\u0105drze."),
+      L("Thorin", "Gdyby wi\u0119cej z nas ceni\u0142o dobre jedzenie, \u015Bmiech i pie\u015Bni bardziej ni\u017C z\u0142oto, \u015Bwiat by\u0142by weselszy. \u017Begnaj, Bilbo\u2026", (ctx) => ctx.camTo([2.9, 1.05, -1.9], [1.75, 0.75, -1.45], 4)),
+      N("Thorin D\u0119bowa Tarcza umiera.", (ctx) => {
+        ctx.a.thorin.cur.timeScale = 0;
+        ctx.camTo([1.4, 3.6, 2.2], [1.4, 0.4, -1], 6);
+      })
+    ]
+  },
+  // ---------- Zakończenia 2 i 3 ----------
+  "z23-negocjacje": {
+    music: "main",
+    amb: { night: 0.6, fire: 0.5 },
+    loc: gateAndCamp,
+    setup(ctx) {
+      gateTalk(ctx);
+      ctx.camTo([5.4, 1.8, -5.6], [-0.6, 1.2, -4.9], 8, [7.2, 2.2, -6.4], [-0.6, 1.3, -4.9]);
+    },
+    keep: true,
+    lines: [
+      N("Bilbo nie oddaje Arcyklejnotu. Nast\u0119pnego dnia ludzie i elfy przychodz\u0105 pod bram\u0119 G\xF3ry na rozmowy."),
+      L("Bard", "Thorinie! Potrzebujemy cz\u0119\u015Bci skarbu, aby odbudowa\u0107 spalone Miasto na Jeziorze.", (ctx) => ctx.a.bard.play("talk", { once: true, then: "idle" })),
+      L("Thorin", "Nie dostaniecie ani jednej monety! Odejd\u017Acie spod mojej G\xF3ry!", (ctx) => {
+        ctx.a.thorin.play("no", { once: true, then: "idle" });
+        ctx.camTo([1.8, 1.7, -5.4], [0, 1.2, -2.2], 2.5);
+      }),
+      L("Kr\xF3l Elf\xF3w", "Twoja chciwo\u015B\u0107 sprowadzi na nas wszystkich wojn\u0119, Thorinie.", (ctx) => ctx.camTo([-0.4, 2.1, -4.6], [-2.2, 1.9, -7.7], 2.5)),
+      L("Bilbo", "Musz\u0119 co\u015B zrobi\u0107\u2026 Przecie\u017C mam swoj\u0105 cz\u0119\u015B\u0107 skarbu.", (ctx) => ctx.camTo([3.4, 1.2, -5], [1.8, 0.8, -2.6], 2.5))
+    ]
+  },
+  "z2-zgoda": {
+    music: "main",
+    amb: { night: 0.6, fire: 0.5 },
+    loc: gateAndCamp,
+    setup(ctx) {
+      gateTalk(ctx);
+      ctx.walk(ctx.a.bilbo, 0.8, -4.8, 1);
+      ctx.camTo([4.2, 1.5, -5.6], [0.4, 1, -4.8], 8, [6.2, 2, -6.4], [-0.4, 1.2, -4.9]);
+    },
+    lines: [
+      L("Bilbo", "Poczekajcie! We\u017Acie moj\u0105 cz\u0119\u015B\u0107 skarbu. Niech pos\u0142u\u017Cy do odbudowy miasta.", (ctx) => ctx.a.bilbo.play("talk", { once: true, then: "idle" })),
+      L("Bard", "To bardzo hojne, Bilbo. Twoje z\u0142oto wystarczy, aby odbudowa\u0107 wiele dom\xF3w.", (ctx) => ctx.camTo([-1.4, 1.9, -4.4], [0, 1.6, -7.4], 2.5)),
+      L("Thorin", "Niech b\u0119dzie. Skoro hobbit p\u0142aci za nas, nie b\u0119dzie wojny.", (ctx) => ctx.camTo([1.8, 1.7, -5.4], [0, 1.2, -2.2], 2.5)),
+      L("Kr\xF3l Elf\xF3w", "Zgoda. Ludzie, elfy i krasnoludy nie b\u0119d\u0105 ze sob\u0105 walczy\u0107.", (ctx) => {
+        ctx.a.king.play("wave", { once: true, then: "idle" });
+        ctx.camTo([-0.4, 2.1, -4.6], [-2.2, 1.9, -7.7], 2.5);
+      }),
+      N("Ludzie, elfy i krasnoludy zawieraj\u0105 zgod\u0119.", (ctx) => ctx.camTo([8, 3.2, -11], [0, 1, -5], 5))
+    ]
+  },
+  "z2-atak": {
+    music: "main",
+    amb: { night: 0.5, fire: 0.3 },
+    loc: battlefield,
+    setup(ctx) {
+      crowd(ctx, ["human", "elf"], 0, -6, Math.PI, 12, 6, "guard");
+      ctx.add("bard", -1.5, -3.5, Math.PI, "guard");
+      const g = dwarfGroup(ctx, 13, 1, -Math.PI / 2 - 0.5);
+      ctx.a = { thorin: g.thorin };
+      riders(ctx, 8, -46, -24);
+      ctx.camTo([3.5, 1.4, -18], [-2, 1.3, -45], 6, [5, 1.8, -21], [-2, 1.2, -50]);
+      sfx("howl");
+    },
+    lines: [
+      N("Nagle z p\xF3\u0142nocy nadci\u0105gaj\u0105 gobliny na wargach!"),
+      L("Bard", "Gobliny! Thorinie, pom\xF3\u017Ccie nam!", (ctx) => ctx.camTo([-0.2, 2.2, -0.2], [-1.5, 1.7, -3.5], 2.5)),
+      L("Thorin", "To nie nasza wojna. Mamy ju\u017C swoje z\u0142oto.", (ctx) => ctx.camTo([10.6, 1.6, 2.6], [13, 1.1, 1], 2.5)),
+      N("Krasnoludy nie chc\u0105 walczy\u0107. Stoj\u0105 z boku i tylko patrz\u0105. Walcz\u0105 tylko ludzie i elfy.", (ctx) => ctx.camTo([14, 3.5, 12], [10, 0.5, -10], 5))
+    ]
+  },
+  "z2-straty": {
+    music: "sad",
+    amb: { fire: 0.4, night: 0.3 },
+    loc: (w) => {
+      battlefield(w);
+      smokeColumn(w, -8, 1, -20, 1.5);
+      smokeColumn(w, 10, 1, -14, 1.3);
+    },
+    setup(ctx) {
+      for (let i = 0; i < 16; i++) ctx.add(i % 2 ? "elf" : "human", rnd(-16, 14), rnd(-30, -6), rnd(0, 6.3), "death", { i });
+      for (let i = 0; i < 5; i++) ctx.add("goblin", rnd(-18, 18), rnd(-34, -10), rnd(0, 6.3), "death");
+      crowd(ctx, ["human", "elf"], -2, -2, Math.PI, 4, 3);
+      dwarfGroup(ctx, 13, 1, -Math.PI / 2 - 0.5);
+      ctx.camTo([-5, 2, -6], [2, 0.3, -17], 14, [-9, 2.8, -2], [1, 0.3, -16]);
+      ctx.fill = 34;
+    },
+    lines: [
+      N("Bitwa jest bardzo ci\u0119\u017Cka. Ginie wielu ludzi i elf\xF3w."),
+      N("Krasnoludy przez ca\u0142\u0105 bitw\u0119 stoj\u0105 z boku. Thorin prze\u017Cywa, ale nie podnosi miecza.", (ctx) => ctx.camTo([8, 1.8, 4.5], [13, 1, 0.5], 5))
+    ]
+  },
+  "z2-krol": {
+    music: "sad",
+    amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    loc: battlefield,
+    setup(ctx) {
+      archerShot(ctx, "elfKing");
+    },
+    lines: [
+      N("Kr\xF3l Le\u015Bnych Elf\xF3w walczy w pierwszym szeregu. Na skale stoi goblin z \u0142ukiem\u2026"),
+      N("Goblin strzela!", (ctx) => ctx.a.fire()),
+      N("Pada Kr\xF3l Le\u015Bnych Elf\xF3w.")
+    ]
+  },
+  "z3-dain": {
+    music: "main",
+    amb: { night: 0.6, fire: 0.5 },
+    loc: gateAndCamp,
+    setup(ctx) {
+      const g = dwarfGroup(ctx, -2, -3, -Math.PI / 2 - 0.6, { n: 12 });
+      ctx.a = { thorin: g.thorin };
+      const army = [];
+      const dain = ctx.add("dain", 30, -9, -Math.PI / 2, "walk");
+      ctx.a.dain = dain;
+      ctx.walk(dain, 6, -8, 1.6);
+      for (let i = 0; i < 18; i++) {
+        const row = Math.floor(i / 3), col = i % 3, x = 32 + row * 1.6, z = -11 + col * 1.4;
+        const d = ctx.add("ironDwarf", x, z, -Math.PI / 2, "walk", { i });
+        army.push(d);
+        ctx.walk(d, x - 22, z, 1.6);
+      }
+      crowd(ctx, ["human", "elf"], -2, -34, 0, 8, 6, "guard");
+      [[10, -12.5], [18, -12.5], [26, -12.5], [14, -4.5], [22, -4.5]].forEach(([x, z], i) => torch(ctx.w, x, z, { light: i < 3 ? 12 : 0 }));
+      ctx.camTo([17, 1.6, -14.5], [28, 1.1, -9], 10, [15, 2, -15.5], [30, 1.1, -9]);
+      ctx.fill = 30;
+    },
+    lines: [
+      N("Bilbo zatrzymuje swoj\u0105 cz\u0119\u015B\u0107 skarbu. Rozmowy ko\u0144cz\u0105 si\u0119 k\u0142\xF3tni\u0105."),
+      N("Wtedy ze wschodu nadci\u0105ga D\xE1in z armi\u0105 krasnolud\xF3w z \u017Belaznych Wzg\xF3rz."),
+      L("D\xE1in", "Thorinie, kuzynie! Przybywam z \u017Belaznych Wzg\xF3rz z moimi wojownikami!", (ctx) => {
+        const d = ctx.a.dain.pos;
+        ctx.camTo([d.x - 3.4, 1.5, d.z - 2.8], [d.x, 1.1, d.z], 2.5);
+      }),
+      L("Thorin", "Witaj, D\xE1inie! Razem obronimy skarb G\xF3ry!", (ctx) => {
+        ctx.a.thorin.play("wave", { once: true, then: "idle" });
+        ctx.camTo([1.4, 1.6, -6.4], [-2, 1.1, -3], 2.5);
+      }),
+      N("Krasnoludy ruszaj\u0105 do bitwy z lud\u017Ami i elfami.", (ctx) => ctx.camTo([10, 4, -20], [0, 0.5, -10], 5))
+    ]
+  },
+  "z3-gobliny": {
+    music: "main",
+    amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    loc: battlefield,
+    setup(ctx) {
+      for (let i = 0; i < 10; i++) ctx.add(i % 3 ? "ironDwarf" : "dwarf", rnd(-14, 14), rnd(-20, 2), rnd(0, 6.3), "death", { i });
+      for (let i = 0; i < 6; i++) ctx.add(i % 2 ? "elf" : "human", rnd(-16, 16), rnd(-24, -4), rnd(0, 6.3), "death", { i });
+      ctx.a = { thorin: ctx.add("thorin", 0, -4, Math.PI, "guard") };
+      ctx.add("dain", 2, -3.4, Math.PI, "guard");
+      crowd(ctx, ["dwarf"], 0, -1, Math.PI, 5, 3, "guard");
+      riders(ctx, 7, -55, -24);
+      ctx.camTo([3.2, 1.7, 2.2], [0, 0.8, -10], 8, [5, 2.3, 4.5], [0, 0.8, -10]);
+      sfx("howl");
+    },
+    lines: [
+      N("Krasnoludy wygrywaj\u0105, ale wielu z nich pada w bitwie."),
+      N("Nagle nadci\u0105gaj\u0105 gobliny i wargi!", (ctx) => ctx.camTo([2, 1.6, -1], [0, 1.5, -40], 3)),
+      L("Thorin", "Gobliny?! Jeste\u015Bmy zbyt s\u0142abi\u2026 Do mnie, krasnoludy!", (ctx) => ctx.camTo([1.2, 1.5, -6.8], [0, 1.1, -4], 2.5))
+    ]
+  },
+  "z3-przegrana": {
+    music: "sad",
+    amb: { fire: 0.4, night: 0.2 },
+    loc: (w) => {
+      battlefield(w);
+      smokeColumn(w, -6, 1, -14, 1.5);
+      smokeColumn(w, 8, 1, -8, 1.3);
+    },
+    setup(ctx) {
+      for (let i = 0; i < 16; i++) ctx.add(i % 3 ? "ironDwarf" : "dwarf", rnd(-12, 12), rnd(-20, 2), rnd(0, 6.3), "death", { i });
+      for (let i = 0; i < 5; i++) {
+        const r = ctx.add("rider", rnd(-14, 14), rnd(-18, -2), rnd(0, 6.3), "idle");
+      }
+      crowd(ctx, ["goblin"], 0, -10, 0, 6, 8);
+      ctx.camTo([-6, 2, 0], [0, 0.5, -9], 12, [-9, 2.8, 3], [0, 0.5, -9]);
+      ctx.fill = 34;
+    },
+    lines: [
+      N("Gobliny i wargi atakuj\u0105 os\u0142abione krasnoludy."),
+      N("Gin\u0105 wszyscy towarzysze Thorina.")
+    ]
+  },
+  "z3-thorin": {
+    music: "sad",
+    amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    loc: battlefield,
+    setup(ctx) {
+      archerShot(ctx, "thorin");
+    },
+    lines: [
+      N("Thorin walczy do ko\u0144ca. Na skale stoi goblin z \u0142ukiem\u2026"),
+      N("Goblin strzela!", (ctx) => ctx.a.fire()),
+      N("Strza\u0142a goblina trafia Thorina. Kr\xF3l spod G\xF3ry umiera.")
+    ]
+  },
+  "z3-odejscie": {
+    music: "sad",
+    amb: { night: 0.6 },
+    loc: battlefield,
+    setup(ctx) {
+      for (let i = 0; i < 12; i++) ctx.add(i % 3 ? "ironDwarf" : "dwarf", rnd(-14, 14), rnd(-24, -2), rnd(0, 6.3), "death", { i });
+      ctx.add("thorin", 4, -10, 1, "death");
+      const b = ctx.a = { bilbo: ctx.add("bilbo", -14, -20.2, 0.9) };
+      b.bilbo.setOpacity(0.18);
+      ctx.camTo([-9.6, 1.4, -19.6], [-13.6, 0.8, -20.4], 12, [-9, 1.8, -18.2], [-13.8, 0.8, -20.2]);
+    },
+    lines: [
+      N("Gobliny odchodz\u0105. Na polu bitwy robi si\u0119 cicho."),
+      N("Bilbo wychodzi zza kamienia. Jest za\u0142amany.", (ctx) => ctx.walk(ctx.a.bilbo, -11.6, -20.6, 0.6)),
+      N("Bilbo zdejmuje pier\u015Bcie\u0144 i odchodzi w dal.", (ctx) => {
+        const b = ctx.a.bilbo;
+        b.setOpacity(1);
+        sfx("ring");
+        ctx.after(1.2, () => ctx.walk(b, -45, -50, 0.9));
+        ctx.camTo([-6, 3, -15], [-24, 0.5, -34], 12);
+      })
+    ]
+  }
+};
+var current = null;
+async function playScene(id) {
+  const def = SCENES[id];
+  if (IMG[id]) {
+    const el = $("plansza");
+    el.style.backgroundImage = `url("${IMG[id]}")`;
+    show("plansza");
+    setMode({ scene: null, update() {
+    } });
+    await fade(0, 600);
+    for (const l of def.lines) {
+      dialog(l.who, l.text);
+      await waiter("line", id);
+    }
+    hideDialog();
+    if (!def.keep) {
+      await fade(1, def.fadeOut || 800);
+      show("plansza", false);
+    }
+    return;
+  }
+  music(def.music ?? "main", def.music === "sad" ? 0.7 : 0.6);
+  amb(def.amb || { night: 0.8 });
+  const w = nightWorld(def.world);
+  def.loc(w);
+  w.hemi.intensity *= 1.35;
+  const ctx = makeCtx(w);
+  ctx.id = id;
+  camera.fov = BASE_FOV;
+  camera.updateProjectionMatrix();
+  frameShift(0.12);
+  def.setup(ctx);
+  current = ctx;
+  setMode({ scene: w.scene, update: (dt) => tick(ctx, dt) });
+  tick(ctx, 0.016);
+  await fade(0, 700);
+  ctx.lines = def.lines.length;
+  for (const [i, l] of def.lines.entries()) {
+    ctx.line = i;
+    if (l.fn) l.fn(ctx);
+    dialog(l.who, l.text);
+    await waiter("line", id);
+  }
+  hideDialog();
+  if (!def.keep) await fade(1, def.fadeOut || 800);
+}
+var sceneCtx = () => current;
+var SCENE_IDS = Object.keys(SCENES).filter((id) => !id.startsWith("lab"));
+function menuBackdrop() {
+  const w = nightWorld();
+  gateAndCamp(w);
+  const ctx = makeCtx(w);
+  crowd(ctx, ["human", "elf"], -6, -40, 0, 6, 4);
+  ctx.add("bilbo", 7.8, 1, Math.PI, "idle", { y: 14 });
+  ctx.fill = 0;
+  music("main", 0.7);
+  amb({ night: 0.6, fire: 0.2 });
+  camera.fov = BASE_FOV;
+  camera.updateProjectionMatrix();
+  frameShift(0);
+  return {
+    scene: w.scene,
+    update(dt) {
+      const a = ctx.t * 0.05;
+      ctx.cut([Math.sin(a) * 14, 7 + Math.sin(ctx.t * 0.1) * 1.5, -86 + Math.cos(a) * 6], [0, 10, 0]);
+      tick(ctx, dt);
+    }
+  };
+}
+
+// src/road.js
+import * as THREE6 from "three";
+
+// src/tpp.js
+import * as THREE5 from "three";
+var back = V();
+var camTarget = V();
+var camWant = V();
+var right = V();
+var camRay = new THREE5.Raycaster();
+var TPP = class {
+  constructor(w, char, { speed = 1.9, run = 4.6, height = 1.1, dist = 4.2, bounds = null } = {}) {
+    Object.assign(this, { w, char, speed, runSpeed: run, height, dist, bounds });
+    this.pos = V();
+    this.yaw = Math.PI;
+    this.camYaw = 0;
+    this.camPitch = 0.28;
+    this.running = false;
+    this.moving = false;
+    this.extra = [];
+    this.curDist = dist;
+    this.shoulder = 0;
+    this.fov = BASE_FOV;
+    this.shake = 0;
+    this.anims = { idle: "idle", walk: "walk", run: "run" };
+    this.step = { len: height < 1.2 ? 0.5 : 0.75, vol: 0.45, rate: height < 1.2 ? 1.15 : 0.95, surface: () => this.running ? "leaves" : "grass" };
+    this.stride = 0;
+  }
+  reset(x, z, yaw = Math.PI) {
+    this.pos.set(x, 0, z);
+    this.yaw = yaw;
+    this.camYaw = yaw - Math.PI;
+    this.camPitch = 0.28;
+    this.place();
+  }
+  look() {
+    this.camYaw -= input.dx * 25e-4;
+    this.camPitch = clamp(this.camPitch + input.dy * 22e-4, -0.1, 1.1);
+  }
+  // ruch względem kamery; zwraca wektor ruchu (lub null)
+  move(dt, { canRun = true, anim = true, speed = null, face = true } = {}) {
+    const f = (key("KeyW", "ArrowUp") ? 1 : 0) - (key("KeyS", "ArrowDown") ? 1 : 0);
+    const r = (key("KeyD", "ArrowRight") ? 1 : 0) - (key("KeyA", "ArrowLeft") ? 1 : 0);
+    this.moving = !!(f || r);
+    if (!this.moving) {
+      this.running = false;
+      if (anim) this.char.play(this.anims.idle);
+      return null;
+    }
+    const fx = -Math.sin(this.camYaw), fz = -Math.cos(this.camYaw), len = Math.hypot(f, r);
+    const mx = (fx * f - fz * r) / len, mz = (fz * f + fx * r) / len;
+    this.running = canRun && key("ShiftLeft", "ShiftRight");
+    const sp = speed ?? (this.running ? this.runSpeed : this.speed);
+    this.pos.x += mx * sp * dt;
+    this.pos.z += mz * sp * dt;
+    this.stride += sp * dt;
+    if (this.stride > this.step.len * (this.running ? 1.5 : 1)) {
+      this.stride = 0;
+      footstep(this.step.surface(), { vol: this.step.vol * (this.running ? 1.6 : 1), rate: this.step.rate });
+    }
+    if (face) this.yaw = angLerp(this.yaw, Math.atan2(mx, mz), damp(12, dt));
+    if (anim) this.char.play(this.running ? this.anims.run : this.anims.walk);
+    this.collide();
+    return { x: mx, z: mz };
+  }
+  collide() {
+    const b = this.bounds;
+    if (b) {
+      this.pos.x = clamp(this.pos.x, b[0], b[1]);
+      this.pos.z = clamp(this.pos.z, b[2], b[3]);
+    }
+    for (const k of [...this.w.rocks, ...this.extra]) {
+      const dx = this.pos.x - k.x, dz = this.pos.z - k.z, d = Math.hypot(dx, dz), m = k.r * 0.95 + 0.3;
+      if (d < m && d > 0) {
+        this.pos.x = k.x + dx / d * m;
+        this.pos.z = k.z + dz / d * m;
+      }
+    }
+  }
+  groundY() {
+    return this.w.h(this.pos.x, this.pos.z);
+  }
+  place(y = null) {
+    this.char.root.position.set(this.pos.x, y ?? this.groundY(), this.pos.z);
+    this.char.root.rotation.y = this.yaw;
+  }
+  // kamera za plecami; skała między bohaterem a kamerą przybliża kamerę; shoulder = przesunięcie w prawo (celowanie)
+  camera(dt, { dist = this.dist, shoulder = 0, fov = BASE_FOV, y = null } = {}) {
+    const k = damp(10, dt);
+    this.curDist = lerp(this.curDist, dist, k);
+    this.shoulder = lerp(this.shoulder, shoulder, k);
+    this.fov = lerp(this.fov, fov, k);
+    if (Math.abs(camera.fov - this.fov) > 0.01) {
+      camera.fov = this.fov;
+      camera.updateProjectionMatrix();
+    }
+    const baseY = y ?? this.char.root.position.y;
+    camTarget.set(this.pos.x, baseY + this.height * 1.05, this.pos.z);
+    right.set(Math.cos(this.camYaw), 0, -Math.sin(this.camYaw));
+    camTarget.addScaledVector(right, this.shoulder);
+    back.set(Math.sin(this.camYaw) * Math.cos(this.camPitch), Math.sin(this.camPitch), Math.cos(this.camYaw) * Math.cos(this.camPitch));
+    camRay.set(camTarget, back);
+    camRay.far = this.curDist;
+    const hit2 = camRay.intersectObjects(this.w.rockMeshes.concat(this.w.camBlock || []), false)[0];
+    const d = hit2 ? Math.max(0.6, hit2.distance - 0.3) : this.curDist;
+    camWant.copy(camTarget).addScaledVector(back, d);
+    camWant.y = Math.max(camWant.y, this.w.h(camWant.x, camWant.z) + 0.3);
+    const s = this.shake;
+    camera.position.copy(camWant).add(V((Math.random() - 0.5) * 2 * s, (Math.random() - 0.5) * 2 * s, 0));
+    camera.lookAt(camTarget);
+    this.shake = Math.max(0, this.shake - dt * 0.6);
+    this.w.focus.copy(this.pos);
+    this.w.fill.intensity = 14;
+    this.w.fill.position.copy(camTarget).addScaledVector(back, 1.8).y += 0.9;
+  }
+  // kierunek patrzenia kamery (do przodu, poziomo)
+  get viewYaw() {
+    return this.camYaw + Math.PI;
+  }
+};
+
+// src/road.js
+var DZ = -24;
+var BILBO_H = 1.1;
+var SNEAK = 1.9;
+var RUN = 4.6;
+var NOISE_R = 7;
+var LISTEN_TIME = 2.5;
+var RUN_KATAR = 2.5;
+var RING_TIME = 5;
+var RING_RECHARGE = 3;
+var KATAR_UP = 1 / 25;
+var KATAR_DOWN = 1 / 5;
+var SEE_DIST = 24;
+var CONE_A = 0.4;
+var ALERT_MAX = 0.8;
+var END_Z = -186 + DZ;
+var FIRE = V(0, 0, -198 + DZ);
+var ROPE_X = 1.2;
+var ROPE_Z = 5.05;
+var ROPE_TOP = 13.2;
+var ROPE_ACC = 3.2;
+var ROPE_GRIP = 7;
+var ROPE_MAX = 4.2;
+var ROPE_SAFE = 2.8;
+var ROPE_BAR = 3.9;
+var ROPE_SLIP = 0.35;
+var RIVER_Z1 = -4.3;
+var RIVER_Z2 = -17.7;
+var WATER_Y = -0.55;
+var JUMP_V = 4.3;
+var JUMP_H = 2;
+var GRAV = 11;
+var STONES = [[0.9, -4.9], [-0.4, -6.9], [0.7, -8.9], [-0.6, -10.9], [0.5, -12.9], [-0.5, -14.9], [0.4, -16.9]].map(([x, z], i) => ({ x, z, r: 0.62, top: -0.18 + i % 3 * 0.05 }));
+var SNEAK_START = V(0, 0, -20.5);
+var RC = (RIVER_Z1 + RIVER_Z2) / 2;
+var HALF = 6.35;
+var EDGE = 0.5;
+function hAt(x, z) {
+  const bank = Math.max(hills(x, z), 0) + 0.15, d = Math.abs(z - RC);
+  if (d >= HALF + EDGE) return bank;
+  if (d <= HALF) return -1.6;
+  return lerp(-1.6, bank, (d - HALF) / EDGE);
+}
+function support(x, z) {
+  for (const s of STONES) if (Math.hypot(x - s.x, z - s.z) < s.r + 0.2) return s.top;
+  const h = hAt(x, z);
+  return h > WATER_Y + 0.1 ? h : null;
+}
+function buildWorld() {
+  const w = nightWorld();
+  terrain(w, { x1: -70, x2: 70, z1: -260, z2: 20, step: 0.5, h: hAt });
+  grass(w, { n: 9e3, x1: -24, x2: 24, z1: -239, z2: 4, skip: (x, z) => hAt(x, z) < WATER_Y + 0.15 });
+  pines(w, 300, (i) => {
+    const behind = i > 260;
+    return [behind ? rnd(-40, 40) : (Math.random() < 0.5 ? -1 : 1) * rnd(27, 60), behind ? rnd(-264, -242) : rnd(-239, 10)];
+  });
+  wall(w, 7, { width: 70, height: 14, rope: true });
+  mountain(w, 0, 55, 260, 170, 140);
+  water(w, -70, 70, RIVER_Z2 - 0.6, RIVER_Z1 + 0.6, WATER_Y);
+  const stoneMat = new THREE6.MeshStandardMaterial({ color: 5922928, roughness: 0.5, metalness: 0.2, flatShading: true, emissive: 1317414 });
+  STONES.forEach((s) => {
+    const m = new THREE6.Mesh(new THREE6.CylinderGeometry(s.r, s.r + 0.15, 1.4, 8), stoneMat);
+    m.position.set(s.x, s.top - 0.7, s.z);
+    m.rotation.y = rnd(0, 6);
+    m.castShadow = m.receiveShadow = true;
+    w.scene.add(m);
+  });
+  [
+    [-5, -18, 2.2],
+    [6, -26, 2.6],
+    [-9, -36, 2.4],
+    [3, -41, 2],
+    [11, -53, 2.8],
+    [-4, -58, 2.5],
+    [-13, -68, 2.3],
+    [7, -74, 2.6],
+    [0, -86, 2.2],
+    [-10, -92, 2.7],
+    [12, -104, 2.4],
+    [-3, -112, 2.6],
+    [8, -124, 2.2],
+    [-12, -132, 2.5],
+    [3, -140, 2.8],
+    [13, -152, 2.3],
+    [-6, -160, 2.6],
+    [5, -172, 2.4]
+  ].forEach(([x, z, r]) => makeRock(w, x, z + DZ, r, true));
+  for (let i = 0; i < 60; i++) makeRock(w, rnd(-23, 23), rnd(-180, -8) + DZ, rnd(0.3, 0.8), false);
+  [[-7, -204, 2.4], [7, -207, 2.8], [0, -214, 3.2], [-14, -212, 2.6], [14, -216, 2.6]].forEach(([x, z, s], i) => tent(w, x, z + DZ, s, i));
+  w.fire = fire(w, FIRE.x, FIRE.z, { light: 30, dist: 35 });
+  banner(w, -4, -201 + DZ, 2771610);
+  banner(w, 5, -202 + DZ, 2779706);
+  torch(w, -10, -200 + DZ);
+  torch(w, 10, -201 + DZ);
+  return w;
+}
+var coneGeo = (() => {
+  const L2 = 11, g = new THREE6.ConeGeometry(Math.tan(CONE_A) * L2, L2, 32, 1, true);
+  g.translate(0, -L2 / 2, 0);
+  g.rotateX(-Math.PI / 2);
+  return g;
+})();
+var coneMatBase = new THREE6.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  blending: THREE6.AdditiveBlending,
+  side: THREE6.DoubleSide,
+  uniforms: { uOn: { value: 1 } },
+  vertexShader: "varying float vZ; void main(){ vZ = position.z; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }",
+  fragmentShader: "uniform float uOn; varying float vZ; void main(){ float a = pow(1. - clamp(vZ / 11., 0., 1.), 1.6) * .16 * uOn; gl_FragColor = vec4(1., .75, .45, a); }"
+});
+var wristPos = V();
+function makeGuard(w, shadows) {
+  const c = new Char("elf");
+  w.scene.add(c.root);
+  const lampG = new THREE6.Group();
+  c.root.add(lampG);
+  const lamp = new THREE6.Mesh(new THREE6.BoxGeometry(0.12, 0.17, 0.12), new THREE6.MeshStandardMaterial({ color: 2234896, emissive: 16752704, emissiveIntensity: 3 }));
+  lampG.add(lamp, new THREE6.PointLight(16754765, 4, 8, 2), glow(16752704, 1.3, true, 0.9));
+  const spot = new THREE6.SpotLight(16761466, 40, 26, CONE_A, 0.45, 1);
+  spot.target.position.set(0, -1.1, 6);
+  spot.castShadow = shadows;
+  if (shadows) {
+    spot.shadow.mapSize.set(512, 512);
+    spot.shadow.camera.near = 0.3;
+    spot.shadow.camera.far = 26;
+    spot.shadow.bias = -2e-3;
+  }
+  lampG.add(spot, spot.target);
+  const coneMat = coneMatBase.clone();
+  const cone = new THREE6.Mesh(coneGeo, coneMat);
+  cone.rotation.x = Math.atan2(1.1, 6);
+  lampG.add(cone);
+  return { c, g: c.root, lamp, lampG, wrist: c.model.getObjectByName("WristL"), spot, coneMat, alert: 0, yaw: 0 };
+}
+function animateGuard(g, dt) {
+  g.c.update(dt);
+  g.g.updateMatrixWorld(true);
+  g.wrist.getWorldPosition(wristPos);
+  g.g.worldToLocal(wristPos);
+  g.lampG.position.set(wristPos.x, wristPos.y - 0.12, Math.max(wristPos.z, 0.25));
+}
+var walkYaw = (d) => d > 0 ? Math.PI / 2 : -Math.PI / 2;
+function updateGuard(g, dt) {
+  let yaw;
+  if (g.state === "listen") {
+    g.c.play("guard");
+    g.t += dt;
+    const to = Math.atan2(g.lx - g.x, g.lz - g.z);
+    yaw = angLerp(g.yaw, to, damp(6, dt));
+    if (g.t >= LISTEN_TIME) g.state = "walk";
+  } else if (g.state === "walk") {
+    g.c.play("walk");
+    g.x += g.dir * g.speed * dt;
+    yaw = walkYaw(g.dir);
+    if (g.dir > 0 && g.x >= g.x2 || g.dir < 0 && g.x <= g.x1) {
+      g.x = clamp(g.x, g.x1, g.x2);
+      g.state = "look";
+      g.t = 0;
+    }
+  } else {
+    g.c.play("idle");
+    g.t += dt;
+    const a = walkYaw(g.dir), sweepEnd = Math.sin(1.6 * 2.4) * 0.55;
+    if (g.t < 0.6) yaw = lerp(a, 0, g.t / 0.6);
+    else if (g.t < 2.2) yaw = Math.sin((g.t - 0.6) * 2.4) * 0.55;
+    else yaw = lerp(sweepEnd, -a, Math.min(1, (g.t - 2.2) / 0.6));
+    if (g.t >= 2.8) {
+      g.dir *= -1;
+      g.state = "walk";
+    }
+  }
+  g.yaw = yaw;
+  g.g.rotation.y = yaw;
+  g.g.position.set(g.x, hAt(g.x, g.z), g.z);
+}
+function roadStage() {
+  const w = buildWorld();
+  const bilbo = new Char("bilbo");
+  w.scene.add(bilbo.root);
+  bilbo.play("walk");
+  bilbo.cur.timeScale = 0.8;
+  const tpp = new TPP(w, bilbo, { speed: SNEAK, run: RUN, height: BILBO_H, bounds: [-24, 24, -229, 4.6] });
+  const guards = [
+    { z: -47, x1: -16, x2: 16, speed: 1.6, sx: -16, sdir: 1 },
+    { z: -98, x1: -17, x2: 17, speed: 1.9, sx: 17, sdir: -1 },
+    { z: -146, x1: -16, x2: 16, speed: 1.75, sx: -4, sdir: 1 }
+  ].map((p) => Object.assign(makeGuard(w, true), p, { z: p.z + DZ, x: p.sx, dir: p.sdir, state: "walk", t: 0 }));
+  const campGuards = [{ x: -2.4, z: -198.5 + DZ, yaw0: Math.PI / 2 }, { x: 2.6, z: -197 + DZ, yaw0: -Math.PI / 2 }].map((p) => Object.assign(makeGuard(w, false), p));
+  const ray = new THREE6.Raycaster(), lp = V(), dir = V(), chest = V();
+  const splash = glow(12572927, 1, true, 0);
+  w.scene.add(splash);
+  let phase = "rope", ring = 1, katar = 0, ringOn = false, tipsShown = 0, endLook = null;
+  let ropeY = ROPE_TOP, rv = 0, danger = 0, py = 0, vy = 0, onGround = true, splashT = 9;
+  const jv = V();
+  const onStone = () => STONES.some((s) => Math.hypot(tpp.pos.x - s.x, tpp.pos.z - s.z) < s.r + 0.2);
+  tpp.step.surface = () => phase === "river" && onStone() ? "stone" : tpp.running ? "leaves" : "grass";
+  tpp.step.vol = 0.35;
+  let ropeSnd = 0, sniffT = 0;
+  const KEYS = {
+    rope: "Spacja (przytrzymaj) \u2014 zjazd po linie \xB7 R \u2014 od nowa \xB7 Esc \u2014 pauza \xB7 M \u2014 d\u017Awi\u0119k",
+    river: "WASD \u2014 ruch \xB7 Spacja \u2014 skok \xB7 Shift \u2014 bieg \xB7 mysz \u2014 kamera \xB7 R \u2014 od nowa \xB7 Esc \u2014 pauza \xB7 M \u2014 d\u017Awi\u0119k",
+    sneak: "WASD \u2014 skradanie \xB7 Shift \u2014 podbieganie \xB7 mysz \u2014 kamera \xB7 E \u2014 pier\u015Bcie\u0144 \xB7 R \u2014 od nowa \xB7 Esc \u2014 pauza \xB7 M \u2014 d\u017Awi\u0119k"
+  };
+  function setRing(on) {
+    if (on && !ringOn) sfx("ring");
+    ringOn = on;
+    ringEffect(on, bilbo);
+  }
+  function reset(p = phase) {
+    if (st.clearTimers) st.clearTimers();
+    phase = p;
+    st.state = st.state === "intro" ? "intro" : "play";
+    setRing(false);
+    tpp.shake = 0;
+    endLook = null;
+    center("");
+    mark("");
+    $("vigAlert").style.opacity = 0;
+    $("say").style.opacity = 0;
+    hud({ speed: p === "rope", ring: p === "sneak", katar: p === "sneak", keys: KEYS[p] });
+    bilbo.root.visible = true;
+    if (p === "rope") {
+      ropeY = ROPE_TOP;
+      rv = 0;
+      danger = 0;
+      bilbo.play("idle");
+    }
+    if (p === "river") {
+      tpp.reset(ROPE_X, 3.2, Math.PI);
+      py = support(tpp.pos.x, tpp.pos.z) ?? 0;
+      vy = 0;
+      onGround = true;
+      bilbo.play("idle");
+    }
+    if (p === "sneak") {
+      tpp.reset(SNEAK_START.x, SNEAK_START.z, Math.PI);
+      ring = 1;
+      katar = 0;
+      tipsShown = 0;
+      bilbo.play("idle");
+      guards.forEach((g) => Object.assign(g, { x: g.sx, dir: g.sdir, state: "walk", t: 0, alert: 0 }));
+    }
+    campGuards.forEach((g) => {
+      g.c.play("idle");
+      g.yaw = g.yaw0;
+      g.turn = false;
+      g.coneMat.uniforms.uOn.value = 0;
+      g.spot.intensity = 0;
+      g.g.rotation.y = g.yaw0;
+      g.g.position.set(g.x, hAt(g.x, g.z), g.z);
+    });
+  }
+  function fail(title, sub, then = phase) {
+    st.state = "fail";
+    setRing(false);
+    tpp.shake = 0.15;
+    bilbo.play("hit", { once: true });
+    $("vigAlert").style.opacity = 1;
+    center(title, sub);
+    sfx("fail", { delay: 0.3 });
+    st.at(2200, () => {
+      reset(then);
+      st.state = "play";
+    });
+  }
+  function toRiver() {
+    phase = "river";
+    reset("river");
+    say("Bilbo", "Uff\u2026 Uda\u0142o si\u0119 zej\u015B\u0107. Teraz rzeka.", 2600);
+    tip("Przejd\u017A przez rzek\u0119 po kamieniach. Spacja \u2014 skok. Gdy wpadniesz do wody, wracasz na brzeg.");
+  }
+  function toSneak() {
+    reset("sneak");
+    say("Bilbo", "Jestem po drugiej stronie. Teraz cicho\u2026 Do obozu jeszcze daleko.", 3e3);
+    tip("Przy skale odpoczywasz: pier\u015Bcie\u0144 si\u0119 \u0142aduje, a katar maleje.");
+  }
+  function look(g) {
+    g.lamp.getWorldPosition(lp);
+    chest.set(tpp.pos.x, hAt(tpp.pos.x, tpp.pos.z) + BILBO_H * 0.6, tpp.pos.z);
+    dir.subVectors(chest, lp);
+    const d = dir.length();
+    if (d > SEE_DIST) return { seen: false };
+    dir.divideScalar(d);
+    const hl = Math.hypot(dir.x, dir.z) || 1;
+    if ((Math.sin(g.yaw) * dir.x + Math.cos(g.yaw) * dir.z) / hl < Math.cos(CONE_A)) return { seen: false };
+    ray.set(lp, dir);
+    ray.far = d;
+    return { seen: ray.intersectObjects(w.rockMeshes, false).length === 0, d };
+  }
+  function ending2() {
+    st.state = "end";
+    setRing(false);
+    mark("");
+    bilbo.play("idle");
+    const cg = campGuards[0];
+    endLook = cg;
+    st.at(150, () => sfx("sneeze", { vary: 0 }));
+    st.at(300, () => say("Bilbo", "A\u2026 a\u2026", 1e3));
+    st.at(1500, () => {
+      say("Bilbo", "A-PSIK!", 900);
+      tpp.shake = 0.08;
+      bilbo.play("hit", { once: true, then: "idle" });
+    });
+    st.at(2500, () => {
+      cg.turn = true;
+      cg.c.play("guard");
+      cg.coneMat.uniforms.uOn.value = 1;
+      cg.spot.intensity = 40;
+      mark("!");
+    });
+    st.at(3e3, () => say("Stra\u017Cnik", "Kto tam?! St\xF3j!", 1600));
+    st.at(4800, () => {
+      mark("");
+      say("Bilbo", "Zaprowad\u017Acie mnie do Barda. Mam dla niego co\u015B bardzo cennego.", 3e3);
+    });
+    st.at(8e3, () => st.finish());
+  }
+  const st = {
+    id: "z1-droga",
+    w,
+    musicVol: 0.35,
+    amb: { night: 0.8 },
+    title: "Droga do obozu",
+    text: "Noc. Bilbo wymyka si\u0119 z Samotnej G\xF3ry z Arcyklejnotem w kieszeni.\nZejd\u017A z muru po linie, przejd\u017A przez rzek\u0119 i dojd\u017A do ogniska w obozie ludzi i elf\xF3w tak, \u017Ceby nikt ci\u0119 nie zobaczy\u0142.",
+    keys: "Spacja \u2014 zjazd po linie i skok \xB7 WASD \u2014 ruch \xB7 Shift \u2014 podbieganie \xB7 mysz \u2014 kamera \xB7 E \u2014 pier\u015Bcie\u0144 \xB7 R \u2014 od nowa \xB7 Esc \u2014 pauza \xB7 M \u2014 d\u017Awi\u0119k",
+    begin() {
+      reset("rope");
+      tip("Przytrzymaj Spacj\u0119, aby zje\u017Cd\u017Ca\u0107. Pu\u015B\u0107, zanim pasek wejdzie na czerwone pole \u2014 inaczej lina wy\u015Blizgnie si\u0119 z r\u0105k.", 8e3);
+    },
+    // haki testowe
+    tp(x, z) {
+      tpp.pos.set(x, 0, z);
+    },
+    get river() {
+      return { x: tpp.pos.x, z: tpp.pos.z, y: py, onGround, state: st.state };
+    },
+    stones: STONES,
+    aim(dx, dz) {
+      const y = Math.atan2(dx, dz);
+      tpp.camYaw = y + Math.PI;
+      tpp.yaw = y;
+    },
+    setPhase(p) {
+      reset(p);
+      st.state = "play";
+    },
+    get phase() {
+      return phase;
+    },
+    get ringOn() {
+      return ringOn;
+    },
+    setRing,
+    update(dt, t) {
+      const play = st.state === "play";
+      if (play && hit("KeyR")) reset();
+      if (st.state !== "fail") guards.forEach((g) => updateGuard(g, dt));
+      [...guards, ...campGuards].forEach((g) => animateGuard(g, st.state === "fail" ? 0 : dt));
+      bilbo.update(dt);
+      const pz = phase === "rope" ? 5 : tpp.pos.z;
+      setAmb("river", Math.max(0, 1 - Math.abs(pz + 11) / 26));
+      setAmb("fire", phase === "sneak" ? Math.max(0, 1 - Math.hypot(tpp.pos.x - FIRE.x, tpp.pos.z - FIRE.z) / 45) : 0);
+      setAmb("rope", phase === "rope" ? 0.25 + Math.min(0.75, rv / 3) : 0);
+      if (phase === "rope") {
+        if (play) {
+          ropeSnd -= dt;
+          if (rv > 0.4 && ropeSnd <= 0) {
+            sfx("rope_slide", { vol: 0.25 + rv * 0.15, rate: 0.8 + rv * 0.1 });
+            ropeSnd = 0.38;
+          }
+          if (key("Space", "KeyS", "ArrowDown")) rv = Math.min(rv + ROPE_ACC * dt, ROPE_MAX);
+          else rv = Math.max(rv - ROPE_GRIP * dt, 0);
+          ropeY -= rv * dt;
+          danger = rv > ROPE_SAFE ? danger + dt : 0;
+          bilbo.play(rv > 0.15 ? "walk" : "idle", { speed: 0.4 + rv * 0.5 });
+          if (danger > ROPE_SLIP) {
+            st.state = "slip";
+            rv = 0;
+            bilbo.play("hit", { once: true });
+            tpp.shake = 0.12;
+            sfx("rope_slide", { vol: 1, rate: 0.7 });
+            sfx("fall", { delay: 0.5 });
+            sfx("fail", { delay: 0.6 });
+            center("Za szybko!", "Lina wy\u015Blizguje si\u0119 Bilbowi z r\u0105k.\nZaczynasz od nowa\u2026");
+            $("vigAlert").style.opacity = 0.7;
+            st.at(2e3, () => {
+              reset("rope");
+              st.state = "play";
+            });
+          }
+          const gy = hAt(ROPE_X, ROPE_Z);
+          if (ropeY <= gy) {
+            ropeY = gy;
+            toRiver();
+          }
+        } else if (st.state === "slip") ropeY = Math.max(hAt(ROPE_X, ROPE_Z) + 3, ropeY - 6 * dt);
+        setBar("speedBar", rv / ROPE_BAR, rv > ROPE_SAFE);
+        bilbo.root.position.set(ROPE_X, ropeY, ROPE_Z);
+        bilbo.root.rotation.y = 0;
+        const want = V(ROPE_X + 3.4, ropeY + 1.3, ROPE_Z - 4.4);
+        camera.position.lerp(want, st.state === "intro" ? 1 : damp(4, dt));
+        camera.lookAt(ROPE_X, ropeY + 0.2, ROPE_Z);
+        w.focus.set(ROPE_X, ropeY, ROPE_Z);
+        w.fill.intensity = 14;
+        w.fill.position.set(ROPE_X + 1.5, ropeY + 1.5, ROPE_Z - 1.8);
+      } else if (phase === "river") {
+        if (play) {
+          tpp.look();
+          if (onGround) {
+            const mv = tpp.move(dt);
+            if (hit("Space")) {
+              vy = JUMP_V;
+              onGround = false;
+              bilbo.play("run");
+              jv.set(mv ? mv.x : 0, 0, mv ? mv.z : 0).multiplyScalar(mv ? JUMP_H : 0);
+            }
+          } else {
+            tpp.pos.x += jv.x * dt;
+            tpp.pos.z += jv.z * dt;
+            tpp.collide();
+            vy -= GRAV * dt;
+            py += vy * dt;
+          }
+          const sup = support(tpp.pos.x, tpp.pos.z);
+          if (onGround) {
+            if (sup === null) {
+              onGround = false;
+              vy = 0;
+              jv.set(0, 0, 0);
+            } else py = sup;
+          } else if (sup !== null && py <= sup && vy <= 0) {
+            py = sup;
+            onGround = true;
+            bilbo.play("idle");
+            sfx(onStone() ? "step_stone" : "land", { vol: 0.8, rate: 1.1 });
+          }
+          if (!onGround && sup === null && py < WATER_Y - 0.2) {
+            splash.position.set(tpp.pos.x, WATER_Y + 0.3, tpp.pos.z);
+            splashT = 0;
+            sfx("splash");
+            fail("Plusk!", "Bilbo wpad\u0142 do wody.\nWracasz na brzeg\u2026");
+          }
+          if (onGround && tpp.pos.z < RIVER_Z2 - 1) toSneak();
+        } else if (st.state === "fail") py = Math.max(py - 1.5 * dt, WATER_Y - 1.4);
+        tpp.place(py);
+        tpp.camera(dt, { y: Math.max(py, WATER_Y) });
+      } else {
+        if (play) {
+          tpp.look();
+          tpp.extra = guards.map((g) => ({ x: g.x, z: g.z, r: 0.35 }));
+          tpp.move(dt);
+          if (hit("KeyE")) setRing(!ringOn && ring > 0.05);
+          const nearRock = w.rocks.some((k) => k.big && Math.hypot(tpp.pos.x - k.x, tpp.pos.z - k.z) < k.r + 1.8);
+          if (ringOn) {
+            ring -= dt / RING_TIME;
+            if (ring <= 0) {
+              ring = 0;
+              setRing(false);
+            }
+          } else if (nearRock) ring = Math.min(1, ring + dt / RING_RECHARGE);
+          katar = clamp(katar + (nearRock ? -KATAR_DOWN : KATAR_UP * (tpp.running ? RUN_KATAR : 1)) * dt, 0, 1);
+          sniffT -= dt;
+          if (katar > 0.7 && sniffT <= 0) {
+            sfx("sniff", { vol: 0.6, rate: 1.1 });
+            sniffT = 2.5 + Math.random() * 1.5;
+          }
+          $("status").textContent = nearRock ? "\u25CF Przy skale \u2014 odpoczywasz" : tpp.running ? "\u25CF Podbiegasz \u2014 ha\u0142as i zadyszka: stra\u017Cnicy w pobli\u017Cu ci\u0119 us\u0142ysz\u0105" : "";
+          if (tpp.pos.z < -30 + DZ && tipsShown === 0) {
+            tipsShown = 1;
+            tip("Latarnia widzi daleko, ale ska\u0142a zas\u0142ania ci\u0119 przed jej \u015Bwiat\u0142em. E \u2014 za\u0142\xF3\u017C pier\u015Bcie\u0144.");
+          }
+          if (katar >= 1) {
+            sfx("sneeze2", { offset: 0.95, vary: 0 });
+            fail("A-PSIK!", "Stra\u017Cnicy us\u0142yszeli kichni\u0119cie.\nWracasz na pocz\u0105tek etapu\u2026");
+          } else {
+            let maxA = 0, sus = false;
+            for (const g of guards) {
+              if (tpp.running && Math.hypot(g.x - tpp.pos.x, g.z - tpp.pos.z) < NOISE_R) Object.assign(g, { state: "listen", t: 0, lx: tpp.pos.x, lz: tpp.pos.z });
+              if (g.state === "listen") sus = true;
+              const v = look(g);
+              if (v.seen && !ringOn) g.alert += dt * (v.d < 8 ? 2 : 1);
+              else g.alert = Math.max(0, g.alert - dt * 0.5);
+              if (v.seen && ringOn) sus = true;
+              maxA = Math.max(maxA, g.alert);
+            }
+            $("vigAlert").style.opacity = Math.min(1, maxA / ALERT_MAX);
+            mark(maxA > 0.05 ? "!" : sus ? "?" : "");
+            if (maxA >= ALERT_MAX) fail("Stra\u017Cnik ci\u0119 zauwa\u017Cy\u0142!", "Wracasz na pocz\u0105tek etapu\u2026");
+            else if (tpp.pos.z < END_Z) ending2();
+          }
+        }
+        if (st.state === "end" && endLook) {
+          const cg = endLook, toG = Math.atan2(cg.x - tpp.pos.x, cg.z - tpp.pos.z);
+          tpp.yaw = angLerp(tpp.yaw, toG, damp(3, dt));
+          tpp.camYaw = angLerp(tpp.camYaw, toG + Math.PI, damp(2, dt));
+          tpp.camPitch = lerp(tpp.camPitch, 0.15, damp(2, dt));
+          if (cg.turn) {
+            cg.yaw = angLerp(cg.yaw, Math.atan2(tpp.pos.x - cg.x, tpp.pos.z - cg.z), damp(4, dt));
+            cg.g.rotation.y = cg.yaw;
+          }
+        }
+        tpp.place();
+        tpp.camera(dt);
+        setBar("ringBar", ring);
+        setBar("katarBar", katar, katar > 0.75);
+      }
+      splashT += dt;
+      splash.material.opacity = Math.max(0, 0.9 - splashT);
+      splash.scale.setScalar(1 + splashT * 5);
+    }
+  };
+  reset("rope");
+  return runStage(st);
+}
+
+// src/bow.js
+import * as THREE7 from "three";
+var NEED = 5;
+var MAX_ALIVE = 3;
+var SPAWN_EVERY = 3.5;
+var ARROW_V = 46;
+var GRAV2 = 7;
+var COOLDOWN = 0.7;
+var HIT_R = 1.25;
+var REACH = 2.6;
+var BITE_EVERY = 1.6;
+function bowStage({ dwarves = "fight" } = {}) {
+  const w = nightWorld({ shadowSize: 50 });
+  battlefield(w);
+  w.scene.fog.density = 0.012;
+  const ctx = makeCtx(w);
+  battleAllies(ctx, { dwarves: dwarves === "fight" });
+  if (dwarves === "fight") ctx.duel("thorin", "goblin", -18, -14, 0.5);
+  if (dwarves === "watch") dwarfGroup(ctx, 9, 0, -Math.PI / 2 - 0.6);
+  const bard = new Char("bard");
+  w.scene.add(bard.root);
+  const bow = makeBow(1.25);
+  bard.hold(bow, "WristR", V(0, 0, 0.1));
+  const tpp = new TPP(w, bard, { speed: 2.4, run: 4.8, height: 1.7, dist: 3.4, bounds: [-40, 40, -60, 30] });
+  const riders2 = [], arrows = [];
+  const ray = new THREE7.Raycaster(), sph = new THREE7.Sphere(), tmp = V(), aimP = V(), start = V();
+  let kills = 0, spawnT = 1, cd = 0, aiming = false;
+  function clearAll() {
+    riders2.forEach((r) => w.scene.remove(r.root));
+    riders2.length = 0;
+    arrows.forEach((a) => w.scene.remove(a.mesh));
+    arrows.length = 0;
+  }
+  function reset() {
+    st.clearTimers && st.clearTimers();
+    clearAll();
+    kills = 0;
+    spawnT = 1;
+    cd = 0;
+    tpp.reset(0, 8, Math.PI);
+    center("");
+    hud({ counter: `Pokonani: 0 / ${NEED}`, cross: true, keys: st.keys });
+    if (st.state !== "intro") st.state = "play";
+  }
+  function spawn() {
+    const r = new Rider(), x = rnd(-26, 26), z = -46 - rnd(0, 10);
+    r.root.position.set(x, w.h(x, z), z);
+    w.scene.add(r.root);
+    Object.assign(r, { speed: rnd(5.5, 7), bite: 0.6 });
+    r.warg.play("run");
+    riders2.push(r);
+    sfx(Math.random() < 0.5 ? "howl" : "goblin_snarl", { vol: 0.35 });
+  }
+  function kill(r) {
+    r.alive = false;
+    r.warg.play("death", { once: true, fade: 0.1 });
+    r.gob.play("death", { once: true, fade: 0.1 });
+    kills++;
+    sfx("arrow_hit");
+    sfx("goblin_death", { delay: 0.08, vol: 0.8 });
+    sfx("fall", { delay: 0.6, vol: 0.7 });
+    $("counter").textContent = `Pokonani: ${kills} / ${NEED}`;
+    say("", kills < NEED ? "Trafiony!" : "Ostatni wr\xF3g pokonany!", 1200);
+    if (kills >= NEED) {
+      st.state = "end";
+      sfx("win");
+      center("Zwyci\u0119stwo!", "Bard pokona\u0142 pi\u0119ciu wrog\xF3w.");
+      st.at(2600, () => st.finish());
+    }
+  }
+  function shoot() {
+    cd = COOLDOWN;
+    tpp.yaw = tpp.viewYaw;
+    bard.play("shoot", { once: true, then: aiming ? "aim" : "idle", fade: 0.08 });
+    ray.setFromCamera({ x: 0, y: 0 }, camera);
+    let best = Infinity;
+    aimP.copy(ray.ray.origin).addScaledVector(ray.ray.direction, 150);
+    for (const r of riders2) if (r.alive) {
+      sph.set(V(r.pos.x, r.pos.y + 1.3, r.pos.z), HIT_R);
+      if (ray.ray.intersectSphere(sph, tmp)) {
+        const d = tmp.distanceTo(ray.ray.origin);
+        if (d < best) {
+          best = d;
+          aimP.copy(tmp);
+        }
+      }
+    }
+    const g = ray.intersectObject(w.ground, false)[0];
+    if (g && g.distance < best) aimP.copy(g.point);
+    bard.root.updateMatrixWorld(true);
+    bow.getWorldPosition(start);
+    start.y += 0.1;
+    const mesh = makeArrow(0.85);
+    mesh.position.copy(start);
+    w.scene.add(mesh);
+    arrows.push({ mesh, pos: start.clone(), vel: aimP.clone().sub(start).normalize().multiplyScalar(ARROW_V), life: 0, fly: true });
+    sfx("bow");
+  }
+  const st = {
+    id: "bard-luk",
+    w,
+    musicVol: 0.3,
+    amb: { battle: 0.55, night: 0.3, fire: 0.25 },
+    title: "Bard z \u0142ukiem",
+    text: "Gobliny na wargach p\u0119dz\u0105 przez pole bitwy.\nPokonaj pi\u0119ciu wrog\xF3w. Strza\u0142a leci \u0142ukiem i opada \u2014 gdy wr\xF3g jest daleko, celuj troch\u0119 wy\u017Cej.",
+    keys: "WASD \u2014 ruch \xB7 mysz \u2014 celowanie \xB7 prawy przycisk \u2014 przybli\u017Cenie \xB7 lewy przycisk \u2014 strza\u0142 \xB7 R \u2014 od nowa \xB7 Esc \u2014 pauza \xB7 M \u2014 d\u017Awi\u0119k",
+    begin() {
+      reset();
+      tip("Przytrzymaj prawy przycisk myszy, aby przybli\u017Cy\u0107 widok. Lewy przycisk \u2014 strza\u0142.");
+    },
+    get kills() {
+      return kills;
+    },
+    get riders() {
+      return riders2.map((r) => ({ x: +r.pos.x.toFixed(1), z: +r.pos.z.toFixed(1), alive: r.alive, vis: r.root.visible, inScene: !!r.root.parent }));
+    },
+    // hak testowy: trafienie najbliższego wroga
+    autoKill() {
+      const r = riders2.find((x) => x.alive);
+      if (r) kill(r);
+      else {
+        spawn();
+        kill(riders2[riders2.length - 1]);
+      }
+    },
+    aimAt(i = 0) {
+      const r = riders2.filter((x) => x.alive)[i];
+      if (!r) return false;
+      const d = V().subVectors(r.pos, tpp.pos);
+      tpp.camYaw = Math.atan2(-d.x, -d.z);
+      tpp.camPitch = 0.05;
+      return true;
+    },
+    update(dt) {
+      const play = st.state === "play";
+      if (play && hit("KeyR")) reset();
+      if (play) {
+        tpp.look();
+        aiming = input.buttons.has(2);
+        if (aiming) {
+          tpp.move(dt, { anim: false, face: false, canRun: false, speed: 1.4 });
+          tpp.yaw = angLerp(tpp.yaw, tpp.viewYaw, damp(14, dt));
+          if (bard.curName !== "shoot") bard.play("aim", { fade: 0.15 });
+        } else if (bard.curName !== "shoot") tpp.move(dt);
+        else tpp.move(dt, { anim: false });
+        cd -= dt;
+        if (input.clicks.has(0) && cd <= 0) shoot();
+        spawnT -= dt;
+        const alive = riders2.filter((r) => r.alive !== false).length;
+        if (spawnT <= 0 && alive < MAX_ALIVE && kills + alive < NEED) {
+          spawn();
+          spawnT = SPAWN_EVERY;
+        }
+      }
+      $("cross").classList.toggle("aim", aiming);
+      for (const r of riders2) {
+        if (r.alive === false) {
+          r.update(dt);
+          continue;
+        }
+        const dx = tpp.pos.x - r.pos.x, dz = tpp.pos.z - r.pos.z, d = Math.hypot(dx, dz);
+        r.root.rotation.y = angLerp(r.root.rotation.y, Math.atan2(dx, dz), damp(5, dt));
+        if (st.state !== "play") {
+          r.warg.play("idle");
+        } else if (d > REACH) {
+          const s = Math.min(d - REACH, r.speed * dt);
+          r.pos.x += dx / d * s;
+          r.pos.z += dz / d * s;
+          r.warg.play("run");
+        } else {
+          r.warg.play("idle");
+          r.bite -= dt;
+          if (r.bite <= 0) {
+            r.bite = BITE_EVERY;
+            r.warg.play("attack", { once: true, then: "idle", fade: 0.1 });
+            r.gob.play("attack", { once: true, then: "idle" });
+            sfx("snarl", { vol: 0.7, vary: 0.12 });
+            st.at(350, () => {
+              if (r.alive !== false && st.state === "play") {
+                sfx("thump", { vol: 0.6 });
+                tpp.shake = 0.12;
+                $("vigAlert").style.opacity = 0.6;
+                setTimeout(() => $("vigAlert").style.opacity = 0, 250);
+                sfx("thud");
+              }
+            });
+          }
+        }
+        for (const o of riders2) if (o !== r && o.alive !== false) {
+          const ox = r.pos.x - o.pos.x, oz = r.pos.z - o.pos.z, od = Math.hypot(ox, oz);
+          if (od < 2.2 && od > 0) {
+            r.pos.x += ox / od * (2.2 - od) * 0.5;
+            r.pos.z += oz / od * (2.2 - od) * 0.5;
+          }
+        }
+        r.pos.y = w.h(r.pos.x, r.pos.z);
+        r.update(dt);
+      }
+      for (const a of arrows) {
+        if (!a.fly) continue;
+        a.life += dt;
+        const prev = a.pos.clone();
+        a.vel.y -= GRAV2 * dt;
+        a.pos.addScaledVector(a.vel, dt);
+        a.mesh.position.copy(a.pos);
+        a.mesh.lookAt(tmp.copy(a.pos).add(a.vel));
+        const seg = new THREE7.Line3(prev, a.pos.clone());
+        for (const r of riders2) if (r.alive !== false) {
+          const c = V(r.pos.x, r.pos.y + 1.3, r.pos.z);
+          if (seg.closestPointToPoint(c, true, tmp).distanceTo(c) < HIT_R) {
+            a.fly = false;
+            r.gob.root.attach(a.mesh);
+            if (st.state === "play") kill(r);
+            break;
+          }
+        }
+        if (a.fly && (a.pos.y < w.h(a.pos.x, a.pos.z) || a.life > 6)) a.fly = false;
+      }
+      while (arrows.length > 30) w.scene.remove(arrows.shift().mesh);
+      tickActors(ctx, dt);
+      bard.update(dt);
+      tpp.place();
+      tpp.camera(dt, { dist: aiming ? 1.6 : 3.4, shoulder: aiming ? 0.6 : 0.45, fov: aiming ? 42 : 68 });
+    }
+  };
+  reset();
+  return runStage(st);
+}
+
+// src/sword.js
+import * as THREE8 from "three";
+var NEED2 = 5;
+var MAX_ALIVE2 = 2;
+var HP = 2;
+var REACH2 = 2.5;
+var ARC = 1.1;
+var SWING = 0.8;
+var HIT_AT = 280;
+var FOE_STOP = 1.7;
+var FOE_ATTACK = [1.8, 2.6];
+function swordStage() {
+  const w = nightWorld({ shadowSize: 50 });
+  battlefield(w);
+  const ctx = makeCtx(w);
+  ctx.duel("ironDwarf", "human", -12, -22, 0.3, { a: { i: 0 }, b: { i: 1 } });
+  ctx.duel("ironDwarf", "elf", 10, -26, -0.3, { a: { i: 1 } });
+  ctx.duel("dain", "human", -4, -34, 0.1, { b: { i: 3 } });
+  ctx.duel("dwarf", "elf", 18, -12, -0.8, { a: { i: 1 }, b: { i: 1 } });
+  ctx.duel("ironDwarf", "human", -20, -8, 0.9, { a: { i: 2 }, b: { i: 4 } });
+  const thorin = new Char("thorin");
+  w.scene.add(thorin.root);
+  const tpp = new TPP(w, thorin, { speed: 2.6, run: 5, height: 1.4, dist: 3.4, bounds: [-30, 30, -40, 25] });
+  tpp.step.len = 0.6;
+  tpp.step.rate = 0.9;
+  tpp.step.vol = 0.5;
+  const foes = [];
+  let kills = 0, spawned = 0, cd = 0, spawnT = 0.5;
+  function reset() {
+    st.clearTimers && st.clearTimers();
+    foes.forEach((f) => {
+      w.scene.remove(f.c.root);
+      if (f.blade) w.scene.remove(f.blade);
+    });
+    foes.length = 0;
+    kills = 0;
+    spawned = 0;
+    cd = 0;
+    spawnT = 0.5;
+    tpp.reset(0, 6, Math.PI);
+    center("");
+    hud({ counter: `Pokonani: 0 / ${NEED2}`, keys: st.keys });
+    if (st.state !== "intro") st.state = "play";
+  }
+  function spawn() {
+    const kind = spawned % 2 ? "elf" : "human";
+    const c = new Char(kind, { i: spawned });
+    if (kind === "human") c.addSword();
+    const a = tpp.viewYaw + rnd(-0.9, 0.9), d = rnd(12, 16);
+    const x = Math.max(-28, Math.min(28, tpp.pos.x + Math.sin(a) * d)), z = Math.max(-38, Math.min(22, tpp.pos.z + Math.cos(a) * d));
+    c.root.position.set(x, w.h(x, z), z);
+    w.scene.add(c.root);
+    foes.push({ c, kind, hp: HP, atk: rnd(1, 2), stun: 0, down: false });
+    spawned++;
+  }
+  function defeat(f) {
+    f.down = true;
+    f.c.play("death", { once: true, fade: 0.1 });
+    sfx("fall", { delay: 0.5, vol: 0.8 });
+    const s = f.c.sword || f.c.model.getObjectByName("Sword");
+    if (s) {
+      const p = s.getWorldPosition(V());
+      w.scene.attach(s);
+      s.position.set(p.x + rnd(-0.6, 0.6), w.h(p.x, p.z) + 0.05, p.z + rnd(-0.6, 0.6));
+      s.rotation.set(Math.PI / 2, 0, rnd(0, 6));
+      f.blade = s;
+    }
+    kills++;
+    $("counter").textContent = `Pokonani: ${kills} / ${NEED2}`;
+    say("", f.kind === "elf" ? "Elf rozbrojony!" : "Wojownik og\u0142uszony!", 1400);
+    if (kills >= NEED2) {
+      st.state = "end";
+      sfx("win");
+      thorin.play("idle");
+      center("Zwyci\u0119stwo!", "Thorin pokona\u0142 pi\u0119ciu przeciwnik\xF3w.");
+      st.at(2600, () => st.finish());
+    }
+  }
+  function swing() {
+    cd = SWING;
+    tpp.yaw = tpp.viewYaw;
+    thorin.root.rotation.y = tpp.yaw;
+    thorin.play("attack", { once: true, then: "idle", fade: 0.08, speed: 1.3 });
+    sfx("swing", { vol: 0.8 });
+    st.at(HIT_AT, () => {
+      for (const f of foes) {
+        if (f.down) continue;
+        const dx = f.c.root.position.x - tpp.pos.x, dz = f.c.root.position.z - tpp.pos.z;
+        if (Math.hypot(dx, dz) > REACH2 || Math.abs(angDiff(tpp.yaw, Math.atan2(dx, dz))) > ARC) continue;
+        sfx("clash", { vol: 0.9 });
+        f.hp--;
+        if (f.hp <= 0) defeat(f);
+        else {
+          f.c.play("hit", { once: true, then: "guard", fade: 0.08 });
+          f.stun = 0.9;
+          const d = Math.hypot(dx, dz) || 1;
+          f.c.root.position.x += dx / d * 0.9;
+          f.c.root.position.z += dz / d * 0.9;
+        }
+      }
+    });
+  }
+  const st = {
+    id: "thorin-miecz",
+    w,
+    musicVol: 0.3,
+    amb: { battle: 0.6, night: 0.3, fire: 0.25 },
+    title: "Thorin z mieczem",
+    text: "Krasnoludy walcz\u0105 z lud\u017Ami i elfami.\nPokonaj pi\u0119ciu przeciwnik\xF3w. Ka\u017Cdy pada po dw\xF3ch ciosach \u2014 og\u0142uszony albo rozbrojony.",
+    keys: "WASD \u2014 ruch \xB7 Shift \u2014 bieg \xB7 mysz \u2014 kamera i kierunek ciosu \xB7 lewy przycisk \u2014 cios mieczem \xB7 R \u2014 od nowa \xB7 Esc \u2014 pauza \xB7 M \u2014 d\u017Awi\u0119k",
+    begin() {
+      reset();
+      tip("Obr\xF3\u0107 kamer\u0119 w stron\u0119 przeciwnika i uderz lewym przyciskiem myszy.");
+    },
+    get kills() {
+      return kills;
+    },
+    autoKill() {
+      let f = foes.find((x) => !x.down);
+      if (!f) {
+        spawn();
+        f = foes[foes.length - 1];
+      }
+      defeat(f);
+    },
+    update(dt) {
+      const play = st.state === "play";
+      if (play && hit("KeyR")) reset();
+      if (play) {
+        tpp.look();
+        cd -= dt;
+        if (cd > SWING - 0.5) tpp.move(dt, { anim: false, face: false, speed: 0.6 });
+        else tpp.move(dt);
+        if (input.clicks.has(0) && cd <= 0) swing();
+        spawnT -= dt;
+        const alive = foes.filter((f) => !f.down).length;
+        if (spawnT <= 0 && alive < MAX_ALIVE2 && spawned < NEED2) {
+          spawn();
+          spawnT = 2.5;
+        }
+      }
+      tpp.extra = foes.filter((f) => !f.down).map((f) => ({ x: f.c.root.position.x, z: f.c.root.position.z, r: 0.4 }));
+      for (const f of foes) {
+        if (!f.down) {
+          const p = f.c.root.position, dx = tpp.pos.x - p.x, dz = tpp.pos.z - p.z, d = Math.hypot(dx, dz);
+          f.c.root.rotation.y = angLerp(f.c.root.rotation.y, Math.atan2(dx, dz), damp(6, dt));
+          if (st.state !== "play") f.c.play("guard");
+          else if (f.stun > 0) f.stun -= dt;
+          else if (d > FOE_STOP) {
+            const sp = d > 6 ? 3.6 : 2;
+            p.x += dx / d * sp * dt;
+            p.z += dz / d * sp * dt;
+            f.c.play(d > 6 ? "run" : "walk");
+          } else {
+            if (f.c.curName !== "attack" && f.c.curName !== "hit") f.c.play("guard");
+            f.atk -= dt;
+            if (f.atk <= 0) {
+              f.atk = rnd(...FOE_ATTACK);
+              f.c.play("attack", { once: true, then: "guard", fade: 0.1 });
+              st.at(420, () => {
+                if (f.down || st.state !== "play" || Math.hypot(tpp.pos.x - p.x, tpp.pos.z - p.z) > 2.3) return;
+                sfx("clash", { vol: 0.7, rate: 0.9 });
+                tpp.shake = 0.1;
+                $("vigAlert").style.opacity = 0.5;
+                setTimeout(() => $("vigAlert").style.opacity = 0, 250);
+                if (cd <= 0) thorin.play("hit", { once: true, then: "idle", fade: 0.08 });
+              });
+            }
+          }
+          for (const o of foes) if (o !== f && !o.down) {
+            const op = o.c.root.position, ox = p.x - op.x, oz = p.z - op.z, od = Math.hypot(ox, oz);
+            if (od < 1.2 && od > 0) {
+              p.x += ox / od * (1.2 - od) * 0.5;
+              p.z += oz / od * (1.2 - od) * 0.5;
+            }
+          }
+          p.y = w.h(p.x, p.z);
+        }
+        f.c.update(dt);
+      }
+      tickActors(ctx, dt);
+      thorin.update(dt);
+      tpp.place();
+      tpp.camera(dt);
+    }
+  };
+  reset();
+  return runStage(st);
+}
+
+// src/hide.js
+import * as THREE9 from "three";
+var SPOT = V(-14, 0, -20.2);
+var SPOT_R = 1.4;
+function hideStage() {
+  const w = nightWorld({ shadowSize: 50 });
+  battlefield(w);
+  const ctx = makeCtx(w);
+  ctx.duel("dwarf", "goblin", 8, -6, -0.6, { a: { i: 2 } });
+  ctx.duel("ironDwarf", "goblin", 14, -14, -0.3);
+  ctx.duel("thorin", "goblin", 4, -16, 0.2);
+  for (let i = 0; i < 6; i++) ctx.add(i % 2 ? "dwarf" : "ironDwarf", rnd(0, 20), rnd(-24, 0), rnd(0, 6.3), "death", { i });
+  riders(ctx, 6, -90, -18);
+  const bilbo = new Char("bilbo");
+  w.scene.add(bilbo.root);
+  const tpp = new TPP(w, bilbo, { speed: 1.9, run: 4.6, height: 1.1, bounds: [-40, 30, -45, 25] });
+  SPOT.y = w.h(SPOT.x, SPOT.z);
+  const ring = new THREE9.Mesh(new THREE9.RingGeometry(SPOT_R - 0.15, SPOT_R, 40), new THREE9.MeshBasicMaterial({ color: 16765562, transparent: true, opacity: 0.8, side: THREE9.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(SPOT.x, SPOT.y + 0.06, SPOT.z);
+  w.scene.add(ring);
+  const beam = new THREE9.Mesh(new THREE9.CylinderGeometry(0.5, 1.2, 14, 16, 1, true), new THREE9.MeshBasicMaterial({ color: 16765562, transparent: true, opacity: 0.12, blending: THREE9.AdditiveBlending, depthWrite: false, side: THREE9.DoubleSide }));
+  beam.position.set(SPOT.x, SPOT.y + 7, SPOT.z);
+  w.scene.add(beam);
+  const halo = glow(16765562, 3, true, 0.6);
+  halo.position.set(SPOT.x, SPOT.y + 0.5, SPOT.z);
+  w.scene.add(halo);
+  let ringOn = false, warned = false;
+  const st = {
+    id: "bilbo-kamien",
+    w,
+    musicVol: 0.35,
+    amb: { battle: 0.45, night: 0.4, fire: 0.2 },
+    title: "Bilbo si\u0119 chowa",
+    text: "Gobliny i wargi atakuj\u0105 os\u0142abione krasnoludy. Bilbo nie umie walczy\u0107.\nZa\u0142\xF3\u017C pier\u015Bcie\u0144 i schowaj si\u0119 za kamieniem oznaczonym \u015Bwiat\u0142em.",
+    keys: "WASD \u2014 ruch \xB7 Shift \u2014 bieg \xB7 mysz \u2014 kamera \xB7 E \u2014 pier\u015Bcie\u0144 \xB7 Esc \u2014 pauza \xB7 M \u2014 d\u017Awi\u0119k",
+    begin() {
+      tip("Naci\u015Bnij E, aby za\u0142o\u017Cy\u0107 pier\u015Bcie\u0144. Potem id\u017A do \u015Bwiat\u0142a za kamieniem.");
+    },
+    get ringOn() {
+      return ringOn;
+    },
+    tp(x, z) {
+      tpp.pos.set(x, 0, z);
+    },
+    update(dt, t) {
+      if (st.state === "play") {
+        tpp.look();
+        tpp.move(dt);
+        if (hit("KeyE")) {
+          ringOn = !ringOn;
+          ringEffect(ringOn, bilbo);
+          if (ringOn) sfx("ring");
+        }
+        if (Math.hypot(tpp.pos.x - SPOT.x, tpp.pos.z - SPOT.z) < SPOT_R) {
+          if (ringOn) {
+            st.state = "end";
+            bilbo.play("idle");
+            center("Bilbo si\u0119 ukry\u0142", "Nikt go nie widzi\u2026");
+            st.at(2800, () => st.finish());
+          } else if (!warned) {
+            warned = true;
+            tip("Najpierw za\u0142\xF3\u017C pier\u015Bcie\u0144 (E)!", 4e3);
+          }
+        } else warned = false;
+      }
+      ring.material.opacity = 0.5 + Math.sin(t * 4) * 0.3;
+      tickActors(ctx, dt);
+      bilbo.update(dt);
+      tpp.place();
+      tpp.camera(dt);
+    }
+  };
+  tpp.reset(4, 10, Math.PI + 0.6);
+  hud({ keys: st.keys });
+  const done = runStage(st);
+  return done.then(() => ringEffect(false, bilbo));
+}
+
+// src/autotest.js
+var sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+var CHOICES = { 1: [true], 2: [false, true], 3: [false, false] };
+async function autotest(G) {
+  const errors = [], fps = [];
+  addEventListener("error", (e) => errors.push(e.message || "zas\xF3b: " + (e.target && (e.target.src || e.target.href))), true);
+  addEventListener("unhandledrejection", (e) => errors.push("promise: " + (e.reason && e.reason.message)));
+  const ce = console.error;
+  console.error = (...a) => {
+    errors.push(a.join(" "));
+    ce(...a);
+  };
+  const box = document.createElement("pre");
+  box.style.cssText = "position:fixed;left:8px;top:8px;z-index:99;color:#0f0;background:#000c;font:12px monospace;padding:6px;margin:0;max-width:60vw;white-space:pre-wrap";
+  document.body.append(box);
+  const log = (t) => {
+    box.textContent += t + "\n";
+    document.title = "AUTOTEST " + t;
+  };
+  const ends = {};
+  for (const path of [1, 2, 3]) {
+    const choices = [...CHOICES[path]];
+    G.newGame();
+    const t0 = Date.now();
+    while (Date.now() - t0 < 6 * 6e4) {
+      const w = G.waiter;
+      if (!w) {
+        await sleep(100);
+        continue;
+      }
+      if (w.kind === "line" || w.kind === "card") {
+        await sleep(250);
+        G.next();
+      } else if (w.kind === "choice") {
+        await sleep(250);
+        G.choose(choices.shift());
+      } else if (w.kind === "overlay") {
+        G.start();
+        await sleep(2500);
+        fps.push(window.FPS);
+        G.finishStage();
+      } else if (w.kind === "ending") {
+        ends[path] = document.getElementById("endText").textContent;
+        G.skip();
+        break;
+      } else await sleep(100);
+    }
+    log(`\u015Bcie\u017Cka ${path}: ${ends[path] ? "OK" : "NIE DOSZ\u0141A DO KO\u0143CA"}`);
+    await sleep(800);
+  }
+  const ok = Object.keys(ends).length === 3 && !errors.length;
+  log(`${ok ? "OK" : "B\u0141\u0104D"} zako\u0144czenia=${Object.keys(ends).length}/3 b\u0142\u0119dy=${errors.length} kl/s=${Math.min(...fps)}-${Math.max(...fps)}${errors.length ? " | " + errors.slice(0, 3).join(" | ") : ""}`);
+}
+
+// src/main.js
+var Q1 = "Czy Bilbo odda Arcyklejnot ludziom i elfom, aby mieli kart\u0119 przetargow\u0105 w rozmowach z Thorinem?";
+var Q2 = "Czy Bilbo odda swoj\u0105 cz\u0119\u015B\u0107 skarbu na odbudow\u0119 miasta?";
+var ENDINGS = {
+  1: "Dzi\u0119ki uczciwo\u015Bci Bilba bitwa zosta\u0142a wygrana. Bilbo mo\u017Ce w spokoju wr\xF3ci\u0107 do domu\u2026",
+  2: "Dzi\u0119ki hojno\u015Bci Bilba bitwa zosta\u0142a wygrana. Niestety brak woli walki krasnolud\xF3w doprowadzi\u0142 do \u015Bmierci bardzo wielu ludzi i elf\xF3w\u2026",
+  3: "Przez chciwo\u015B\u0107 i zuchwa\u0142o\u015B\u0107 dobro tym razem nie zwyci\u0119\u017Cy\u0142o\u2026"
+};
+var ABORT = new Error("abort");
+var gen = 0;
+var flow = { path: [], ending: null };
+var blank = new THREE10.Scene();
+blank.background = new THREE10.Color(0);
+var black = () => setMode({ scene: blank, update() {
+} });
+async function game() {
+  const my = ++gen;
+  const s = async (p) => {
+    const r = await p;
+    if (my !== gen) throw ABORT;
+    return r;
+  };
+  const scenes = async (...ids) => {
+    for (const id of ids) {
+      flow.path.push(id);
+      await s(playScene(id));
+    }
+  };
+  const stage = async (id, f) => {
+    flow.path.push(id);
+    await s(f());
+    black();
+  };
+  const card2 = async (t, txt, id) => {
+    flow.path.push(id);
+    black();
+    await s(fade(0, 300));
+    await s(card(t, txt, id));
+    await s(fade(1, 500));
+  };
+  const choose = async (q, id) => {
+    flow.path.push(id);
+    const v = await s(choice(q, id));
+    await s(fade(1, 700));
+    black();
+    return v;
+  };
+  flow.path = [];
+  flow.ending = null;
+  try {
+    hideAll();
+    await s(fade(1, 500));
+    await scenes("intro-1", "intro-2", "intro-3", "intro-4", "intro-5", "intro-6");
+    let end;
+    if (await choose(Q1, "wybor-1")) {
+      await stage("z1-droga", roadStage);
+      await scenes("z1-przekazanie", "z1-negocjacje", "z1-atak", "z1-kamien");
+      await card2("Grasz teraz jako Bard", "Bilbo nie mo\u017Ce walczy\u0107.\nBard z \u0142ukiem musi powstrzyma\u0107 gobliny na wargach.", "z1-zmiana");
+      await stage("z1-bard", () => bowStage({ dwarves: "fight" }));
+      await scenes("z1-goblin-strzela", "z1-bard-krzyk", "z1-thorin-lozko");
+      end = 1;
+    } else {
+      await scenes("z23-negocjacje");
+      if (await choose(Q2, "wybor-2")) {
+        await scenes("z2-zgoda", "z2-atak");
+        await card2("Grasz teraz jako Bard", "Bilbo nie umie walczy\u0107, a krasnoludy nie chc\u0105 walczy\u0107.\nBard z \u0142ukiem musi powstrzyma\u0107 gobliny na wargach.", "z2-zmiana");
+        await stage("z2-bard", () => bowStage({ dwarves: "watch" }));
+        await scenes("z2-straty", "z2-krol");
+        await card2("", "Bitwa zosta\u0142a wygrana, ale okupiona wielkimi stratami po stronie ludzi i elf\xF3w", "z2-napis");
+        end = 2;
+      } else {
+        await scenes("z3-dain");
+        await card2("Grasz teraz jako Thorin", "Krasnoludy walcz\u0105 z lud\u017Ami i elfami.\nThorin walczy mieczem.", "z3-zmiana-thorin");
+        await stage("z3-thorin-walka", swordStage);
+        await scenes("z3-gobliny");
+        await card2("Grasz teraz jako Bilbo", "Bilbo nie umie walczy\u0107.\nZa\u0142\xF3\u017C pier\u015Bcie\u0144 i schowaj si\u0119 za kamieniem.", "z3-zmiana-bilbo");
+        await stage("z3-bilbo", hideStage);
+        await scenes("z3-przegrana", "z3-thorin", "z3-odejscie");
+        end = 3;
+      }
+    }
+    flow.ending = end;
+    flow.path.push("koniec-" + end);
+    black();
+    hideAll();
+    music(end === 1 ? "main" : "sad", 0.8);
+    amb({});
+    const again = ending(`Zako\u0144czenie ${end}`, ENDINGS[end], "koniec-" + end);
+    await s(fade(0, 900));
+    const r = await s(again);
+    if (r === "again") game();
+    else menu();
+  } catch (e) {
+    if (e !== ABORT) throw e;
+  }
+}
+function menu() {
+  gen++;
+  S.active = null;
+  setPaused(false);
+  unlock();
+  dropWaiter();
+  hideAll();
+  setMode(menuBackdrop());
+  show("menu");
+  fade(0, 900);
+}
+async function info(title, html) {
+  show("menu", false);
+  show("info");
+  $("infoTitle").textContent = title;
+  $("infoBox").innerHTML = html;
+}
+$("bStart").onclick = () => {
+  show("menu", false);
+  game();
+};
+$("bHow").onclick = () => info("Jak gra\u0107", `
+  <h3>O grze</h3><p>Gra opowiada o Bitwie Pi\u0119ciu Armii z powie\u015Bci \u201EHobbit\u201D J.R.R. Tolkiena. Grasz jako hobbit Bilbo. Twoje dwa wybory decyduj\u0105, kt\xF3re z trzech zako\u0144cze\u0144 zobaczysz.</p>
+  <h3>Scenki</h3><p>Kliknij albo naci\u015Bnij Spacj\u0119, aby przej\u015B\u0107 dalej.</p>
+  <h3>Etapy</h3><ul>
+  <li><b>WASD</b> \u2014 ruch, <b>mysz</b> \u2014 kamera (kliknij w gr\u0119, aby przechwyci\u0107 mysz)</li>
+  <li><b>Shift</b> \u2014 podbieganie (g\u0142o\u015Bne!), <b>Spacja</b> \u2014 zjazd po linie i skok</li>
+  <li><b>E</b> \u2014 pier\u015Bcie\u0144: przez 5 sekund nikt ci\u0119 nie widzi; \u0142aduje si\u0119 przy ska\u0142ach</li>
+  <li><b>Lewy przycisk</b> \u2014 strza\u0142 z \u0142uku albo cios mieczem, <b>prawy przycisk</b> \u2014 przybli\u017Cenie przy celowaniu</li>
+  <li><b>R</b> \u2014 etap od nowa, <b>Esc</b> \u2014 pauza, <b>M</b> \u2014 wy\u0142\u0105cz albo w\u0142\u0105cz d\u017Awi\u0119k</li></ul>
+  <h3>Skradanie</h3><p>Omijaj \u015Bwiat\u0142o latarni elfich stra\u017Cnik\xF3w. Ska\u0142a zas\u0142ania ci\u0119 przed latarni\u0105. Przy skale odpoczywasz: pier\u015Bcie\u0144 si\u0119 \u0142aduje, a katar maleje. Gdy pasek kataru si\u0119 zape\u0142ni, Bilbo kichnie.</p>`);
+$("bCredits").onclick = () => info("Autorzy", md(window.CREDITS_MD || ""));
+$("bBack").onclick = () => {
+  show("info", false);
+  show("menu");
+};
+$("bMenu2").onclick = () => menu();
+addEventListener("keydown", (e) => {
+  if (e.code === "KeyM" && !e.repeat) say("", toggleMute() ? "D\u017Awi\u0119k wy\u0142\u0105czony (M)" : "D\u017Awi\u0119k w\u0142\u0105czony (M)", 1500);
+});
+document.addEventListener("pointerlockchange", () => {
+  const st = S.active;
+  if (!st) return;
+  if (!isLocked() && st.state !== "intro" && st.state !== "done" && !paused) {
+    setPaused(true);
+    show("overlay");
+    $("ovTitle").textContent = "Pauza";
+    $("ovText").textContent = "";
+    $("ovKeys").textContent = st.keys;
+    $("ovGo").textContent = "Kliknij, aby wr\xF3ci\u0107";
+  } else if (isLocked() && paused) {
+    setPaused(false);
+    show("overlay", false);
+  }
+});
+window.G = {
+  ready: false,
+  get waiter() {
+    return currentWaiter();
+  },
+  get stage() {
+    return S.active;
+  },
+  get scene() {
+    return sceneCtx();
+  },
+  get flow() {
+    return flow;
+  },
+  get fps() {
+    return window.FPS;
+  },
+  get audio() {
+    return { music: audioState.music, amb: Object.fromEntries(Object.entries(audioState.amb).filter(([, a]) => a.want > 0).map(([n, a]) => [n, +a.want.toFixed(2)])), muted: isMuted(), sounds: Object.keys(window.SOUNDS || {}).length, decoded: audioState.decoded, failed: audioState.failed, played: audioState.played };
+  },
+  newGame() {
+    show("menu", false);
+    game();
+  },
+  playScene(id) {
+    show("menu", false);
+    return playScene(id);
+  },
+  runStage(name, o) {
+    show("menu", false);
+    return { road: roadStage, bow: bowStage, sword: swordStage, hide: hideStage }[name](o);
+  },
+  menu,
+  start() {
+    return resolveWaiter("overlay");
+  },
+  // start etapu bez kliknięcia
+  next() {
+    return resolveWaiter("line") || resolveWaiter("card");
+  },
+  choose(v) {
+    return resolveWaiter("choice", v);
+  },
+  finishStage() {
+    return resolveWaiter("stage");
+  },
+  // pominięcie etapu
+  skip() {
+    const w = currentWaiter();
+    if (!w) return false;
+    return resolveWaiter(w.kind, w.kind === "ending" ? "menu" : w.kind === "choice" ? true : void 0);
+  }
+};
+probeImages(SCENE_IDS);
+await loadModels((p) => {
+  $("loadBar").style.width = p * 100 + "%";
+});
+show("loading", false);
+menu();
+window.G.ready = true;
+if (/[?&]autotest/.test(location.search)) autotest(window.G);
+
+</script>
+</body>
+</html>

@@ -73,7 +73,7 @@ Autotest w dowolnej przeglądarce (np. w Safari): dwuklik na `tests/safari-autot
 
 ## Autorzy i licencje
 
-Pełna lista: `CREDITS.md` (także w grze: menu → Autorzy).
+Pełna lista licencji modeli, muzyki i dźwięków: `CREDITS.md`.
 
 - Modele 3D: **Quaternius** (quaternius.com), licencja **CC0** — Character Animated, Hooded Adventurer, King, Adventurer, Orc, Wolf, Wooden Bow, Arrow.
 - three.js — licencja MIT. Czcionka Cinzel — SIL Open Font License.

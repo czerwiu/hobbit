@@ -28,7 +28,6 @@ const res = await build({
 const js = res.outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 const html = fs.readFileSync('src/index.html', 'utf8')
   .replace('<!--MODELS-->', models.map(m => `<script src="models/${m}.js"></script>`).join('\n') + '\n' + sounds.map(m => `<script src="sounds/${m}.js"></script>`).join('\n'))
-  .replace('/*CREDITS*/""', () => JSON.stringify(fs.readFileSync('CREDITS.md', 'utf8')).replace(/<\//g, '<\\/'))
   .replace('/*BUNDLE*/', () => js);
 fs.writeFileSync('dist/index.html', html);
 // ilustracje scenek (opcjonalne): assets/plansze → dist/assets/plansze + lista plików.

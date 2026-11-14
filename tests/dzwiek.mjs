@@ -13,6 +13,11 @@ const A = () => p.evaluate(() => G.audio);
 const checks = [];
 const ok = (name, cond, info = '') => checks.push(`${cond ? 'OK ' : 'BŁĄD'} ${name} ${info}`);
 let a = await A(); ok('dekodowanie', a.decoded === a.sounds && !a.failed.length, `${a.decoded}/${a.sounds} ${a.failed}`);
+// każde nagranie musi być naprawdę słyszalne (szczyt > 0,25 ≈ −12 dB)
+const quiet = Object.entries(a.peaks).filter(([n, v]) => v < (n.startsWith('amb_') ? 0.1 : 0.25))   // tło (amb_) może być ciche.map(([n, v]) => `${n}=${v}`);
+ok('wszystkie nagrania mają realną głośność', !quiet.length, quiet.join(' '));
+// maksymalny poziom na wyjściu efektów w oknie czasu (ms)
+const meter = ms => p.evaluate(ms => new Promise(r => { let m = 0; const t0 = performance.now(); const id = setInterval(() => { m = Math.max(m, G.sfxLevel); if (performance.now() - t0 > ms) { clearInterval(id); r(+m.toFixed(3)); } }, 15); }), ms);
 ok('menu: muzyka i świerszcze', a.music === 'main' && a.amb.night > 0, JSON.stringify(a.amb));
 // droga: lina, rzeka, skradanie, kichnięcie
 await p.evaluate(() => { G.runStage('road'); }); await p.waitForTimeout(800); await p.evaluate(() => G.start());
@@ -20,10 +25,16 @@ await p.keyboard.down('Space'); await p.waitForTimeout(800); await p.keyboard.up
 await p.evaluate(() => { G.stage.setPhase('river'); G.stage.tp(0.9, -4.9); G.stage.aim(-1.3, -2); }); await p.waitForTimeout(400);
 await p.keyboard.down('KeyW'); await p.waitForTimeout(200); await p.keyboard.press('Space'); await p.waitForTimeout(900); await p.keyboard.up('KeyW');
 a = await A(); ok('rzeka: szum wody', a.amb.river > 0.3, JSON.stringify(a.amb));
-await p.evaluate(() => { G.stage.setPhase('sneak'); }); await p.waitForTimeout(200);
-await p.keyboard.down('KeyW'); await p.waitForTimeout(1500); await p.keyboard.down('ShiftLeft'); await p.waitForTimeout(1500); await p.keyboard.up('ShiftLeft'); await p.keyboard.up('KeyW');
+await p.evaluate(() => { G.stage.setPhase('sneak'); }); await p.waitForTimeout(600);
+await p.keyboard.down('KeyW'); const stepLvl = await meter(1500); ok('kroki słychać', stepLvl > 0.05, `poziom ${stepLvl}`); await p.keyboard.down('ShiftLeft'); await p.waitForTimeout(1500); await p.keyboard.up('ShiftLeft'); await p.keyboard.up('KeyW');
 await p.keyboard.press('KeyE'); await p.waitForTimeout(300);
-await p.evaluate(() => { G.stage.setPhase('sneak'); G.stage.tp(0, -211); }); await p.keyboard.down('KeyW'); await p.waitForTimeout(300); await p.keyboard.up('KeyW'); await p.waitForTimeout(2000);
+await p.evaluate(() => { G.stage.setPhase('sneak'); }); await p.waitForTimeout(1200);   // cisza po poprzednich krokach
+await p.evaluate(() => { G.stage.tp(0, -211); }); await p.keyboard.down('KeyW'); await p.waitForTimeout(120); await p.keyboard.up('KeyW');
+// scenka kichnięcia: wdech ok. 0,3–0,9 s, „A-PSIK!” ok. 1,5 s od dojścia do obozu
+const inhale = await meter(900), blast = await meter(1100);
+ok('kichnięcie: słychać wdech', inhale > 0.03, `poziom ${inhale}`);
+ok('kichnięcie: słychać „A-PSIK!”', blast > 0.2, `poziom ${blast}`);
+await p.waitForTimeout(300);
 a = await A(); const pl = a.played;
 for (const n of ['rope_slide', 'step_stone', 'step_grass', 'step_leaves', 'ring', 'sneeze']) ok(`droga: ${n}`, pl[n] > 0, pl[n] || 0);
 ok('droga: ognisko słychać przy obozie', a.amb.fire > 0.3, JSON.stringify(a.amb));

@@ -292,7 +292,7 @@ export function roadStage() {
           if (katar > 0.7 && sniffT <= 0) { sfx('sniff', { vol: 0.6, rate: 1.1 }); sniffT = 2.5 + Math.random() * 1.5; }
           $('status').textContent = nearRock ? '● Przy skale — odpoczywasz' : tpp.running ? '● Podbiegasz — hałas i zadyszka: strażnicy w pobliżu cię usłyszą' : '';
           if (tpp.pos.z < -30 + DZ && tipsShown === 0) { tipsShown = 1; tip('Latarnia widzi daleko, ale skała zasłania cię przed jej światłem. E — załóż pierścień.'); }
-          if (katar >= 1) { sfx('sneeze2', { offset: 0.95, vary: 0 }); fail('A-PSIK!', 'Strażnicy usłyszeli kichnięcie.\nWracasz na początek etapu…'); }
+          if (katar >= 1) { sfx('sneeze_katar', { offset: 0.95, vary: 0 }); fail('A-PSIK!', 'Strażnicy usłyszeli kichnięcie.\nWracasz na początek etapu…'); }
           else {
             let maxA = 0, sus = false;
             for (const g of guards) {

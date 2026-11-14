@@ -1,9 +1,10 @@
 // Dźwięk: nagrania CC0 (Freesound, Kenney) i muzyka CC0 (OpenGameArt) — lista w CREDITS.md.
 // Pliki są osadzone jako base64 (dist/sounds/*.js), bo z file:// Web Audio nie wczyta pliku przez sieć.
 // Przeglądarka pozwala grać dźwięk dopiero po pierwszym kliknięciu albo klawiszu — do tego czasu prośby są zapamiętywane.
-let ac = null, master, musicBus, ambBus, sfxBus, muted = false;
+let ac = null, master, musicBus, ambBus, sfxBus, meterNode, muted = false;
 const BUF = {}, decoding = {};
-const state = { music: null, musicNode: null, amb: {}, played: {}, decoded: 0, failed: [] };   // amb: nazwa → { src, gain, want }
+const state = { music: null, musicNode: null, amb: {}, played: {}, decoded: 0, failed: [], peaks: {} };
+const peakOf = b => { const d = b.getChannelData(0); let m = 0; for (let i = 0; i < d.length; i++) m = Math.max(m, Math.abs(d[i])); return +m.toFixed(3); };   // amb: nazwa → { src, gain, want }
 export const audioState = state;
 
 function unlock() {
@@ -14,6 +15,7 @@ function unlock() {
   musicBus = ac.createGain(); musicBus.gain.value = 0.55; musicBus.connect(master);
   ambBus = ac.createGain(); ambBus.gain.value = 0.7; ambBus.connect(master);
   sfxBus = ac.createGain(); sfxBus.gain.value = 0.9; sfxBus.connect(master);
+  meterNode = ac.createAnalyser(); meterNode.fftSize = 2048; sfxBus.connect(meterNode);
   master.gain.value = muted ? 0 : 1;
   // najpierw to, co już gra (muzyka, tło), potem reszta
   [state.music && 'music_' + state.music, ...Object.keys(state.amb).map(n => 'amb_' + n)].filter(Boolean).forEach(decode);
@@ -25,7 +27,7 @@ function unlock() {
 function decode(name) {
   if (BUF[name] || decoding[name] || !window.SOUNDS || !window.SOUNDS[name]) return decoding[name];
   const bin = Uint8Array.from(atob(window.SOUNDS[name]), c => c.charCodeAt(0));
-  decoding[name] = new Promise(ok => ac.decodeAudioData(bin.buffer, b => { BUF[name] = b; state.decoded++; ok(b); }, () => { state.failed.push(name); ok(null); }));
+  decoding[name] = new Promise(ok => ac.decodeAudioData(bin.buffer, b => { BUF[name] = b; state.decoded++; state.peaks[name] = peakOf(b); ok(b); }, () => { state.failed.push(name); ok(null); }));
   return decoding[name];
 }
 // warianty: "step_grass" → losowo step_grass_0..4; "bow" → bow albo bow2
@@ -119,3 +121,12 @@ const UI_TONES = {
   win: t => [392, 523, 659, 784].forEach((f, i) => tone(t + i * 0.13, 0.7, f, 0.12)),
   fail: t => { tone(t, 0.6, 196, 0.15); tone(t + 0.18, 0.7, 147, 0.15); },
 };
+
+// poziom szczytowy na wyjściu efektów (0..1) — do testów automatycznych
+const meterBuf = new Float32Array(2048);
+export function sfxLevel() {
+  if (!meterNode) return 0;
+  meterNode.getFloatTimeDomainData(meterBuf);
+  let m = 0; for (const v of meterBuf) m = Math.max(m, Math.abs(v));
+  return m;
+}

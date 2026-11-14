@@ -310,6 +310,9 @@ function archerShot(ctx, victimKind, foeKind = 'goblin') {
   };
 }
 
+// przekazanie Arcyklejnotu: Bilbo (-5.6, -29.6), Bard (-6, -32.4)
+const OVER_BARD = [[-5.3, 1.95, -33.6], [-5.6, 0.8, -29.6]];
+const OVER_BILBO = [[-5.0, 1.25, -28.3], [-6.0, 1.6, -32.4]];
 export const SCENES = {
   // laboratorium postaci (poza fabułą, tylko do strojenia i podglądu)
   'lab-postacie': {
@@ -411,24 +414,26 @@ export const SCENES = {
     loc: gateAndCamp,
     setup(ctx) {
       const a = ctx.a = {};
-      a.bard = ctx.add('bard', -6, -32.4, Math.PI); a.king = ctx.add('elfKing', -8.4, -33.2, Math.PI - 0.5);
-      a.bilbo = ctx.add('bilbo', -5.6, -29.6, 0);
-      ctx.add('elf', -4.0, -27.6, -0.6, 'guard'); ctx.add('elf', -7.4, -27.6, 0.5, 'guard');
+      a.bard = ctx.add('bard', -6, -32.4); a.king = ctx.add('elfKing', -8.4, -33.2);
+      a.bilbo = ctx.add('bilbo', -5.6, -29.6);
+      // rozmówcy zwróceni do siebie, strażnicy patrzą na Barda i Króla
+      a.bard.face(-5.6, -29.6); a.king.face(-5.6, -29.6); a.bilbo.face(-6.6, -32.6);
+      ctx.add('elf', -4.0, -27.6, 0, 'guard').face(-6.6, -32.6); ctx.add('elf', -7.4, -27.6, 0, 'guard').face(-6.6, -32.6);
       crowd(ctx, ['human', 'elf'], -6, -40, 0, 6, 3);
-      a.gem = makeGem(); a.bilbo.hold(a.gem, 'WristR', V(0, 0.05, 0.08)); a.gem.visible = false;
+      a.gem = makeGem(); a.gem.scale.setScalar(1.4); a.gem.userData.light.intensity = 1.5; a.bilbo.hold(a.gem, 'WristR', V(0, 0.12, 0.2)); a.gem.visible = false;
       ctx.camTo([-3.4, 1.6, -28.6], [-6.2, 1.2, -31.6], 10, [-2.4, 2.0, -26.6], [-6, 1.2, -32]);
     },
     lines: [
       N('Elfy prowadzą Bilba do ogniska. Tam czekają Bard i Król Leśnych Elfów.'),
-      L('Bilbo', 'Dobry wieczór. Jestem Bilbo Baggins, towarzysz Thorina. Przyniosłem wam coś bardzo cennego.', ctx => ctx.a.bilbo.play('talk', { once: true, then: 'idle' })),
-      L('Bilbo', 'To jest Arcyklejnot — Serce Góry. Thorin pragnie go bardziej niż całego złota.', ctx => { ctx.a.gem.visible = true; ctx.camTo([-4.8, 1.25, -28.9], [-5.7, 0.9, -30.4], 3); }),
-      L('Bard', 'Dlaczego nam go dajesz? Przecież jesteś przyjacielem krasnoludów.', ctx => ctx.camTo([-4.4, 1.9, -30.4], [-6.1, 1.6, -32.4], 2.5)),
+      L('Bilbo', 'Dobry wieczór. Jestem Bilbo Baggins, towarzysz Thorina. Przyniosłem wam coś bardzo cennego.', ctx => { ctx.a.bilbo.play('talk', { once: true, then: 'idle' }); ctx.camTo(...OVER_BARD, 2.5); }),
+      L('Bilbo', 'To jest Arcyklejnot — Serce Góry. Thorin pragnie go bardziej niż całego złota.', ctx => { ctx.a.gem.visible = true; ctx.camTo([-5.25, 1.15, -30.9], [-5.6, 0.75, -29.6], 3); }),
+      L('Bard', 'Dlaczego nam go dajesz? Przecież jesteś przyjacielem krasnoludów.', ctx => ctx.camTo(...OVER_BILBO, 2.5)),
       L('Bilbo', 'Nie chcę wojny. Z tym kamieniem będziecie mogli spokojnie porozmawiać z Thorinem.', ctx => {
         const { bilbo, bard, gem } = ctx.a; bilbo.unhold(gem); bard.hold(gem, 'WristR', V(0, 0, 0.1)); bard.play('talk', { once: true, then: 'idle' });
-        ctx.camTo([-3.2, 1.6, -28.6], [-6.4, 1.2, -31.8], 3);
+        ctx.camTo(...OVER_BARD, 3);
       }),
-      L('Król Elfów', 'Jesteś odważniejszy niż wielu wojowników, Bilbo Bagginsie. Dziękujemy ci.', ctx => ctx.a.king.play('wave', { once: true, then: 'idle' })),
-      L('Bard', 'Dziękujemy, Bilbo. Ludzie z Miasta na Jeziorze nie zapomną ci tego.'),
+      L('Król Elfów', 'Jesteś odważniejszy niż wielu wojowników, Bilbo Bagginsie. Dziękujemy ci.', ctx => { ctx.a.king.play('wave', { once: true, then: 'idle' }); ctx.camTo([-6.6, 1.5, -29.4], [-8.4, 1.7, -33.2], 2.5); }),
+      L('Bard', 'Dziękujemy, Bilbo. Ludzie z Miasta na Jeziorze nie zapomną ci tego.', ctx => ctx.camTo(...OVER_BILBO, 2.5)),
     ],
   },
   'z1-negocjacje': {

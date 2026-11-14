@@ -10,7 +10,7 @@ import { bowStage } from './bow.js';
 import { swordStage } from './sword.js';
 import { hideStage } from './hide.js';
 import { autotest } from './autotest.js';
-import { music, amb, toggleMute, isMuted, audioState } from './sfx.js';
+import { music, amb, toggleMute, isMuted, audioState, sfxLevel } from './sfx.js';
 
 const Q1 = 'Czy Bilbo odda Arcyklejnot ludziom i elfom, aby mieli kartę przetargową w rozmowach z Thorinem?';
 const Q2 = 'Czy Bilbo odda swoją część skarbu na odbudowę miasta?';
@@ -102,7 +102,9 @@ $('bHow').onclick = () => info('Jak grać', `
   <li><b>Lewy przycisk</b> — strzał z łuku albo cios mieczem, <b>prawy przycisk</b> — przybliżenie przy celowaniu</li>
   <li><b>R</b> — etap od nowa, <b>Esc</b> — pauza, <b>M</b> — wyłącz albo włącz dźwięk</li></ul>
   <h3>Skradanie</h3><p>Omijaj światło latarni elfich strażników. Skała zasłania cię przed latarnią. Przy skale odpoczywasz: pierścień się ładuje, a katar maleje. Gdy pasek kataru się zapełni, Bilbo kichnie.</p>`);
-$('bCredits').onclick = () => info('Autorzy', UI.md(window.CREDITS_MD || ''));
+$('bCredits').onclick = () => info('Autorzy', `
+  <h3>Pomysły, scenariusz i plan gry</h3><p>Filip Czerwiński i Tymek Wiśniewski<br>klasa 6A</p>
+  <h3>Realizacja gry</h3><p>Claude Code</p>`);
 $('bBack').onclick = () => { UI.show('info', false); UI.show('menu'); };
 $('bMenu2').onclick = () => menu();
 
@@ -127,7 +129,8 @@ window.G = {
   get scene() { return sceneCtx(); },
   get flow() { return flow; },
   get fps() { return window.FPS; },
-  get audio() { return { music: audioState.music, amb: Object.fromEntries(Object.entries(audioState.amb).filter(([, a]) => a.want > 0).map(([n, a]) => [n, +a.want.toFixed(2)])), muted: isMuted(), sounds: Object.keys(window.SOUNDS || {}).length, decoded: audioState.decoded, failed: audioState.failed, played: audioState.played }; },
+  get audio() { return { music: audioState.music, amb: Object.fromEntries(Object.entries(audioState.amb).filter(([, a]) => a.want > 0).map(([n, a]) => [n, +a.want.toFixed(2)])), muted: isMuted(), sounds: Object.keys(window.SOUNDS || {}).length, decoded: audioState.decoded, failed: audioState.failed, played: audioState.played, peaks: audioState.peaks }; },
+  get sfxLevel() { return sfxLevel(); },
   newGame() { UI.show('menu', false); game(); },
   playScene(id) { UI.show('menu', false); return playScene(id); },
   runStage(name, o) { UI.show('menu', false); return ({ road: roadStage, bow: bowStage, sword: swordStage, hide: hideStage })[name](o); },

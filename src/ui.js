@@ -95,28 +95,6 @@ export async function ending(title, text, id) {
 $('bAgain').onclick = () => resolveWaiter('ending', 'again');
 $('bMenu').onclick = () => resolveWaiter('ending', 'menu');
 
-// prosty Markdown → HTML (nagłówki, listy, tabele, linki) dla ekranu Autorzy
-export function md(text) {
-  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-  const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(https?:\/\/[^\s|)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-  let out = '', list = false;
-  for (const line of text.split('\n')) {
-    const l = line.trim();
-    if (l.startsWith('- ') || (l.startsWith('|') && !/^\|[-\s|]+\|$/.test(l))) {
-      if (!list) { out += '<ul>'; list = true; }
-      const cells = l.startsWith('|') ? l.slice(1, -1).split('|').map(c => c.trim()) : [l.slice(2)];
-      if (cells[0] === 'Model') continue;
-      out += `<li>${cells.map(inline).join(' — ')}</li>`;
-      continue;
-    }
-    if (list && !/^\|[-\s|]+\|$/.test(l)) { out += '</ul>'; list = false; }
-    if (l.startsWith('# ')) continue;
-    if (l.startsWith('## ')) out += `<h3>${inline(l.slice(3))}</h3>`;
-    else if (l && !l.startsWith('|')) out += `<p>${inline(l)}</p>`;
-  }
-  return out + (list ? '</ul>' : '');
-}
-
 // pierścień: szary obraz, winieta, półprzezroczysty bohater
 export function ringEffect(on, char) {
   document.querySelector('#game canvas').style.filter = on ? 'grayscale(.85) brightness(1.2) contrast(1.1)' : '';

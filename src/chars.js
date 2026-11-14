@@ -127,7 +127,7 @@ export class Char {
   }
   // przedmiot trzymany w dłoni: pozycja z kości, obrót stały względem postaci (osie kości różnią się między modelami)
   hold(obj, bone = 'WristL', off = V(), rot = null) {
-    const b = this.model.getObjectByName(bone) || this.model.getObjectByName(bone.replace('Wrist', 'Middle1'));
+    const b = this.model.getObjectByName(bone) || this.model.getObjectByName(bone.replace('Wrist', 'Middle1')) || this.model.getObjectByName(bone.replace('Wrist', 'LowerArm'));
     if (!b) return obj;
     if (rot) obj.rotation.copy(rot);
     this.root.add(obj); this.holds.push({ obj, bone: b, off });

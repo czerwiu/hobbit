@@ -110,7 +110,7 @@
 <script src="sounds/rope_slide.js"></script>
 <script src="sounds/snarl.js"></script>
 <script src="sounds/sneeze.js"></script>
-<script src="sounds/sneeze2.js"></script>
+<script src="sounds/sneeze_katar.js"></script>
 <script src="sounds/sniff.js"></script>
 <script src="sounds/splash.js"></script>
 <script src="sounds/step_grass_0.js"></script>
@@ -168,7 +168,6 @@
 <div id="loading" class="screen"><h1>Hobbit</h1><h2>Wczytywanie…</h2><div class="bar"><i id="loadBar"></i></div></div>
 <div id="fade" class="layer"></div>
 
-<script>window.CREDITS_MD = "# Autorzy i licencje\n\n## Gra\n\n- Scenariusz, projekt i kod gry: autor projektu szkolnego (na podstawie powieści J.R.R. Tolkiena „Hobbit, czyli tam i z powrotem”).\n- Kod przygotowany z pomocą Claude (Anthropic).\n\n## Modele 3D\n\nWszystkie modele: autor **Quaternius** (quaternius.com), licencja **CC0 1.0 (domena publiczna)**, pobrane z poly.pizza.\n\n| Model | Rola w grze | Link |\n|---|---|---|\n| Character Animated (Rogue) | Bilbo (przerobiony w kodzie na hobbita) | https://poly.pizza/m/DgOCW9ZCRJ |\n| Hooded Adventurer | elfy, elfi strażnicy | https://poly.pizza/m/y9KWOVG21R |\n| King | Thorin, Dáin, Król Leśnych Elfów | https://poly.pizza/m/I1gTjmuK2m |\n| Adventurer | krasnoludy, Bard, ludzie z Miasta na Jeziorze | https://poly.pizza/m/5EGWBMpuXq |\n| Orc | gobliny | https://poly.pizza/m/5vO2YJsPEf |\n| Wolf | wargi | https://poly.pizza/m/P1gU3Qkr9r |\n| Wooden Bow | łuk Barda i goblinów | https://poly.pizza/m/QnpqjLSKFU |\n| Arrow | strzały | https://poly.pizza/m/Rt48KEPDGt |\n\nMiecz Thorina to miecz z modelu Hooded Adventurer. Arcyklejnot, lina, kamienie, namioty, Samotna Góra i pozostałe obiekty to proste bryły zbudowane w kodzie.\n\n## Biblioteki i czcionki\n\n- three.js 0.160 — licencja MIT — https://threejs.org\n- Czcionka Cinzel (Google Fonts) — SIL Open Font License 1.1\n\n## Dźwięki\n\nWszystkie nagrania mają licencję **CC0 1.0 (domena publiczna)**. Pliki zostały przycięte i wyrównane głośnościowo (ffmpeg).\n\n### Muzyka (OpenGameArt)\n\n| Utwór | Autor | Rola w grze | Link |\n|---|---|---|---|\n| Fantasy: Rising Moon | randommind | delikatna, tajemnicza muzyka: menu, scenki, etapy | https://opengameart.org/content/fantasy-rising-moon |\n| Fantasy: Lament for a Warrior's Soul | randommind | smutna muzyka: śmierć Thorina, straty, zakończenia 2 i 3 | https://opengameart.org/content/fantasy-lament-for-a-warriors-soul |\n\n### Kroki (Kenney, paczka Impact Sounds)\n\n| Dźwięk | Autor | Rola w grze | Link |\n|---|---|---|---|\n| footstep_grass, footstep_snow, footstep_concrete | Kenney | kroki: skradanie po trawie, bieg po suchych liściach, kamienie w rzece | https://kenney.nl/assets/impact-sounds |\n\n### Efekty (Freesound)\n\n| Nagranie | Autor | Rola w grze | Link |\n|---|---|---|---|\n| sneeze.wav | moxobna | kichnięcie Bilba (scenka przy obozie) | https://freesound.org/s/54505/ |\n| sneeze | organicmanpl | kichnięcie z pełnego kataru | https://freesound.org/s/185619/ |\n| Sniff | OwlStorm | pociąganie nosem | https://freesound.org/s/151218/ |\n| SPLASH.wav | petenice | wpadnięcie do wody | https://freesound.org/s/9508/ |\n| Ambiance_Stream_Calm_Loop_Stereo.wav | Nox_Sound | szum rzeki (pętla) | https://freesound.org/s/548373/ |\n| Rope Sliding.wav | cmilo1269 | zjazd po linie | https://freesound.org/s/491960/ |\n| hamp rope creaks | 6polnic | skrzypienie liny (pętla) | https://freesound.org/s/231438/ |\n| Mysterious Sparkle Flourish | SkySpeira | pierścień | https://freesound.org/s/844398/ |\n| Arrow Loose and Flyby | saturdaysoundguy | strzał z łuku | https://freesound.org/s/394180/ |\n| Bow Release (Bow and Arrow) 4 | Ali_6868 | strzał z łuku | https://freesound.org/s/384917/ |\n| Arrow Impact | Twisted_Euphoria | trafienie strzałą | https://freesound.org/s/205938/ |\n| Woosh 2.mp3 | XxChr0nosxX | zamach mieczem | https://freesound.org/s/268226/ |\n| Strong Melee Swing | SypherZent | zamach mieczem | https://freesound.org/s/420670/ |\n| Sword Clash | loudernoises | szczęk mieczy | https://freesound.org/s/334169/ |\n| Sword Clash.wav | Bird_man | szczęk mieczy | https://freesound.org/s/275159/ |\n| Wolf howl | NaturesTemper | wycie warga | https://freesound.org/s/398430/ |\n| Beast Snarling | Christopherderp | warczenie warga | https://freesound.org/s/342204/ |\n| Goblin Snarl | qubodup | warczenie goblina | https://freesound.org/s/442815/ |\n| Goblin Death.wav | spookymodem | krzyk pokonanego goblina | https://freesound.org/s/249813/ |\n| Body fall.wav | DylanTheFish | upadek | https://freesound.org/s/417994/ |\n| Bonfire | forfie | ognisko (pętla) | https://freesound.org/s/364992/ |\n| AMBIENCE NIGHT FIELD CRICKET 01.wav | sengjinn | świerszcze nocą (pętla) | https://freesound.org/s/175020/ |\n| SwordBattle1.wav | freefire66 | odgłosy bitwy (pętla) | https://freesound.org/s/175950/ |\n| Jump Landing [remix MentalSanityOff's jumping 148796] | qubodup | lądowanie | https://freesound.org/s/172960/ |\n| Thump.wav | Macif | uderzenie | https://freesound.org/s/207824/ |\n\nSygnały zwycięstwa i porażki to krótkie tony generowane w kodzie (Web Audio).\n";</script>
 <script type="module">
 // src/main.js
 import * as THREE10 from "three";
@@ -443,7 +442,7 @@ var Char = class {
   }
   // przedmiot trzymany w dłoni: pozycja z kości, obrót stały względem postaci (osie kości różnią się między modelami)
   hold(obj, bone = "WristL", off = V(), rot = null) {
-    const b = this.model.getObjectByName(bone) || this.model.getObjectByName(bone.replace("Wrist", "Middle1"));
+    const b = this.model.getObjectByName(bone) || this.model.getObjectByName(bone.replace("Wrist", "Middle1")) || this.model.getObjectByName(bone.replace("Wrist", "LowerArm"));
     if (!b) return obj;
     if (rot) obj.rotation.copy(rot);
     this.root.add(obj);
@@ -672,32 +671,6 @@ async function ending(title, text, id) {
 }
 $("bAgain").onclick = () => resolveWaiter("ending", "again");
 $("bMenu").onclick = () => resolveWaiter("ending", "menu");
-function md(text) {
-  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
-  const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(https?:\/\/[^\s|)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-  let out = "", list = false;
-  for (const line of text.split("\n")) {
-    const l = line.trim();
-    if (l.startsWith("- ") || l.startsWith("|") && !/^\|[-\s|]+\|$/.test(l)) {
-      if (!list) {
-        out += "<ul>";
-        list = true;
-      }
-      const cells = l.startsWith("|") ? l.slice(1, -1).split("|").map((c) => c.trim()) : [l.slice(2)];
-      if (cells[0] === "Model") continue;
-      out += `<li>${cells.map(inline).join(" \u2014 ")}</li>`;
-      continue;
-    }
-    if (list && !/^\|[-\s|]+\|$/.test(l)) {
-      out += "</ul>";
-      list = false;
-    }
-    if (l.startsWith("# ")) continue;
-    if (l.startsWith("## ")) out += `<h3>${inline(l.slice(3))}</h3>`;
-    else if (l && !l.startsWith("|")) out += `<p>${inline(l)}</p>`;
-  }
-  return out + (list ? "</ul>" : "");
-}
 function ringEffect(on, char) {
   document.querySelector("#game canvas").style.filter = on ? "grayscale(.85) brightness(1.2) contrast(1.1)" : "";
   $("vigRing").style.opacity = on ? 1 : 0;
@@ -710,10 +683,17 @@ var master;
 var musicBus;
 var ambBus;
 var sfxBus;
+var meterNode;
 var muted = false;
 var BUF = {};
 var decoding = {};
-var state = { music: null, musicNode: null, amb: {}, played: {}, decoded: 0, failed: [] };
+var state = { music: null, musicNode: null, amb: {}, played: {}, decoded: 0, failed: [], peaks: {} };
+var peakOf = (b) => {
+  const d = b.getChannelData(0);
+  let m = 0;
+  for (let i = 0; i < d.length; i++) m = Math.max(m, Math.abs(d[i]));
+  return +m.toFixed(3);
+};
 var audioState = state;
 function unlock2() {
   if (ac) {
@@ -734,6 +714,9 @@ function unlock2() {
   sfxBus = ac.createGain();
   sfxBus.gain.value = 0.9;
   sfxBus.connect(master);
+  meterNode = ac.createAnalyser();
+  meterNode.fftSize = 2048;
+  sfxBus.connect(meterNode);
   master.gain.value = muted ? 0 : 1;
   [state.music && "music_" + state.music, ...Object.keys(state.amb).map((n) => "amb_" + n)].filter(Boolean).forEach(decode);
   Object.keys(window.SOUNDS || {}).forEach(decode);
@@ -747,6 +730,7 @@ function decode(name) {
   decoding[name] = new Promise((ok) => ac.decodeAudioData(bin.buffer, (b) => {
     BUF[name] = b;
     state.decoded++;
+    state.peaks[name] = peakOf(b);
     ok(b);
   }, () => {
     state.failed.push(name);
@@ -877,6 +861,14 @@ var UI_TONES = {
     tone(t + 0.18, 0.7, 147, 0.15);
   }
 };
+var meterBuf = new Float32Array(2048);
+function sfxLevel() {
+  if (!meterNode) return 0;
+  meterNode.getFloatTimeDomainData(meterBuf);
+  let m = 0;
+  for (const v of meterBuf) m = Math.max(m, Math.abs(v));
+  return m;
+}
 
 // src/stage.js
 var S = { active: null };
@@ -1769,6 +1761,8 @@ function archerShot(ctx, victimKind, foeKind = "goblin") {
     });
   };
 }
+var OVER_BARD = [[-5.3, 1.95, -33.6], [-5.6, 0.8, -29.6]];
+var OVER_BILBO = [[-5, 1.25, -28.3], [-6, 1.6, -32.4]];
 var SCENES = {
   // laboratorium postaci (poza fabułą, tylko do strojenia i podglądu)
   "lab-postacie": {
@@ -1902,34 +1896,45 @@ var SCENES = {
     loc: gateAndCamp,
     setup(ctx) {
       const a = ctx.a = {};
-      a.bard = ctx.add("bard", -6, -32.4, Math.PI);
-      a.king = ctx.add("elfKing", -8.4, -33.2, Math.PI - 0.5);
-      a.bilbo = ctx.add("bilbo", -5.6, -29.6, 0);
-      ctx.add("elf", -4, -27.6, -0.6, "guard");
-      ctx.add("elf", -7.4, -27.6, 0.5, "guard");
+      a.bard = ctx.add("bard", -6, -32.4);
+      a.king = ctx.add("elfKing", -8.4, -33.2);
+      a.bilbo = ctx.add("bilbo", -5.6, -29.6);
+      a.bard.face(-5.6, -29.6);
+      a.king.face(-5.6, -29.6);
+      a.bilbo.face(-6.6, -32.6);
+      ctx.add("elf", -4, -27.6, 0, "guard").face(-6.6, -32.6);
+      ctx.add("elf", -7.4, -27.6, 0, "guard").face(-6.6, -32.6);
       crowd(ctx, ["human", "elf"], -6, -40, 0, 6, 3);
       a.gem = makeGem();
-      a.bilbo.hold(a.gem, "WristR", V(0, 0.05, 0.08));
+      a.gem.scale.setScalar(1.4);
+      a.gem.userData.light.intensity = 1.5;
+      a.bilbo.hold(a.gem, "WristR", V(0, 0.12, 0.2));
       a.gem.visible = false;
       ctx.camTo([-3.4, 1.6, -28.6], [-6.2, 1.2, -31.6], 10, [-2.4, 2, -26.6], [-6, 1.2, -32]);
     },
     lines: [
       N("Elfy prowadz\u0105 Bilba do ogniska. Tam czekaj\u0105 Bard i Kr\xF3l Le\u015Bnych Elf\xF3w."),
-      L("Bilbo", "Dobry wiecz\xF3r. Jestem Bilbo Baggins, towarzysz Thorina. Przynios\u0142em wam co\u015B bardzo cennego.", (ctx) => ctx.a.bilbo.play("talk", { once: true, then: "idle" })),
+      L("Bilbo", "Dobry wiecz\xF3r. Jestem Bilbo Baggins, towarzysz Thorina. Przynios\u0142em wam co\u015B bardzo cennego.", (ctx) => {
+        ctx.a.bilbo.play("talk", { once: true, then: "idle" });
+        ctx.camTo(...OVER_BARD, 2.5);
+      }),
       L("Bilbo", "To jest Arcyklejnot \u2014 Serce G\xF3ry. Thorin pragnie go bardziej ni\u017C ca\u0142ego z\u0142ota.", (ctx) => {
         ctx.a.gem.visible = true;
-        ctx.camTo([-4.8, 1.25, -28.9], [-5.7, 0.9, -30.4], 3);
+        ctx.camTo([-5.25, 1.15, -30.9], [-5.6, 0.75, -29.6], 3);
       }),
-      L("Bard", "Dlaczego nam go dajesz? Przecie\u017C jeste\u015B przyjacielem krasnolud\xF3w.", (ctx) => ctx.camTo([-4.4, 1.9, -30.4], [-6.1, 1.6, -32.4], 2.5)),
+      L("Bard", "Dlaczego nam go dajesz? Przecie\u017C jeste\u015B przyjacielem krasnolud\xF3w.", (ctx) => ctx.camTo(...OVER_BILBO, 2.5)),
       L("Bilbo", "Nie chc\u0119 wojny. Z tym kamieniem b\u0119dziecie mogli spokojnie porozmawia\u0107 z Thorinem.", (ctx) => {
         const { bilbo, bard, gem } = ctx.a;
         bilbo.unhold(gem);
         bard.hold(gem, "WristR", V(0, 0, 0.1));
         bard.play("talk", { once: true, then: "idle" });
-        ctx.camTo([-3.2, 1.6, -28.6], [-6.4, 1.2, -31.8], 3);
+        ctx.camTo(...OVER_BARD, 3);
       }),
-      L("Kr\xF3l Elf\xF3w", "Jeste\u015B odwa\u017Cniejszy ni\u017C wielu wojownik\xF3w, Bilbo Bagginsie. Dzi\u0119kujemy ci.", (ctx) => ctx.a.king.play("wave", { once: true, then: "idle" })),
-      L("Bard", "Dzi\u0119kujemy, Bilbo. Ludzie z Miasta na Jeziorze nie zapomn\u0105 ci tego.")
+      L("Kr\xF3l Elf\xF3w", "Jeste\u015B odwa\u017Cniejszy ni\u017C wielu wojownik\xF3w, Bilbo Bagginsie. Dzi\u0119kujemy ci.", (ctx) => {
+        ctx.a.king.play("wave", { once: true, then: "idle" });
+        ctx.camTo([-6.6, 1.5, -29.4], [-8.4, 1.7, -33.2], 2.5);
+      }),
+      L("Bard", "Dzi\u0119kujemy, Bilbo. Ludzie z Miasta na Jeziorze nie zapomn\u0105 ci tego.", (ctx) => ctx.camTo(...OVER_BILBO, 2.5))
     ]
   },
   "z1-negocjacje": {
@@ -2969,7 +2974,7 @@ function roadStage() {
             tip("Latarnia widzi daleko, ale ska\u0142a zas\u0142ania ci\u0119 przed jej \u015Bwiat\u0142em. E \u2014 za\u0142\xF3\u017C pier\u015Bcie\u0144.");
           }
           if (katar >= 1) {
-            sfx("sneeze2", { offset: 0.95, vary: 0 });
+            sfx("sneeze_katar", { offset: 0.95, vary: 0 });
             fail("A-PSIK!", "Stra\u017Cnicy us\u0142yszeli kichni\u0119cie.\nWracasz na pocz\u0105tek etapu\u2026");
           } else {
             let maxA = 0, sus = false;
@@ -3691,7 +3696,9 @@ $("bHow").onclick = () => info("Jak gra\u0107", `
   <li><b>Lewy przycisk</b> \u2014 strza\u0142 z \u0142uku albo cios mieczem, <b>prawy przycisk</b> \u2014 przybli\u017Cenie przy celowaniu</li>
   <li><b>R</b> \u2014 etap od nowa, <b>Esc</b> \u2014 pauza, <b>M</b> \u2014 wy\u0142\u0105cz albo w\u0142\u0105cz d\u017Awi\u0119k</li></ul>
   <h3>Skradanie</h3><p>Omijaj \u015Bwiat\u0142o latarni elfich stra\u017Cnik\xF3w. Ska\u0142a zas\u0142ania ci\u0119 przed latarni\u0105. Przy skale odpoczywasz: pier\u015Bcie\u0144 si\u0119 \u0142aduje, a katar maleje. Gdy pasek kataru si\u0119 zape\u0142ni, Bilbo kichnie.</p>`);
-$("bCredits").onclick = () => info("Autorzy", md(window.CREDITS_MD || ""));
+$("bCredits").onclick = () => info("Autorzy", `
+  <h3>Pomys\u0142y, scenariusz i plan gry</h3><p>Filip Czerwi\u0144ski i Tymek Wi\u015Bniewski<br>klasa 6A</p>
+  <h3>Realizacja gry</h3><p>Claude Code</p>`);
 $("bBack").onclick = () => {
   show("info", false);
   show("menu");
@@ -3733,7 +3740,10 @@ window.G = {
     return window.FPS;
   },
   get audio() {
-    return { music: audioState.music, amb: Object.fromEntries(Object.entries(audioState.amb).filter(([, a]) => a.want > 0).map(([n, a]) => [n, +a.want.toFixed(2)])), muted: isMuted(), sounds: Object.keys(window.SOUNDS || {}).length, decoded: audioState.decoded, failed: audioState.failed, played: audioState.played };
+    return { music: audioState.music, amb: Object.fromEntries(Object.entries(audioState.amb).filter(([, a]) => a.want > 0).map(([n, a]) => [n, +a.want.toFixed(2)])), muted: isMuted(), sounds: Object.keys(window.SOUNDS || {}).length, decoded: audioState.decoded, failed: audioState.failed, played: audioState.played, peaks: audioState.peaks };
+  },
+  get sfxLevel() {
+    return sfxLevel();
   },
   newGame() {
     show("menu", false);

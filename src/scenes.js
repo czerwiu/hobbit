@@ -2,7 +2,7 @@
 // Jeśli istnieje assets/plansze/<id>.jpg, scenka pokazuje ilustrację zamiast 3D (podmiana bez zmian w kodzie).
 import * as THREE from 'three';
 import { $, camera, setMode, BASE_FOV, rnd, lerp, V, damp, angLerp, frameShift } from './core.js';
-import { nightWorld, terrain, grass, pines, makeRock, mountain, glow, fire, torch, smokeColumn, water, hills, battlefield, gateAndCamp, makeGem, fillAt, canvasTex } from './env.js';
+import { nightWorld, daylight, terrain, grass, pines, makeRock, mountain, glow, fire, torch, smokeColumn, water, hills, battlefield, gateAndCamp, makeGem, fillAt, canvasTex } from './env.js';
 import { Char, Rider, makeBow, makeArrow } from './chars.js';
 import { dialog, hideDialog, fade, waiter, show } from './ui.js';
 import { sfx, music, amb } from './sfx.js';
@@ -174,7 +174,7 @@ function laketown(w) {
   mountain(w, -40, 50, -320, 180, 150);
 }
 function hall(w) {
-  w.scene.fog.color.setHex(0x0a0705); w.scene.fog.density = 0.035; w.hemi.intensity = 0.5; w.moon.intensity = 0;
+  w.indoor = true; w.scene.fog.color.setHex(0x0a0705); w.scene.fog.density = 0.035; w.hemi.intensity = 0.5; w.moon.intensity = 0;
   w.scene.background = new THREE.Color(0x050403);
   const stone = new THREE.MeshStandardMaterial({ color: 0x1c1814, roughness: 0.9 });
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), stone); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; w.scene.add(floor);
@@ -196,7 +196,7 @@ function hall(w) {
   w.h = () => 0;
 }
 function tentInside(w) {
-  w.scene.fog.color.setHex(0x0a0604); w.scene.fog.density = 0.02; w.hemi.intensity = 0.35; w.moon.intensity = 0;
+  w.indoor = true; w.scene.fog.color.setHex(0x0a0604); w.scene.fog.density = 0.02; w.hemi.intensity = 0.35; w.moon.intensity = 0;
   w.scene.background = new THREE.Color(0x050302);
   const cloth = new THREE.MeshStandardMaterial({ color: 0x4a3420, roughness: 1, side: THREE.BackSide });
   const t = new THREE.Mesh(new THREE.ConeGeometry(7, 6.5, 8, 1, true), cloth); t.position.y = 3.25; w.scene.add(t);
@@ -333,7 +333,7 @@ export const SCENES = {
     lines: [N('Laboratorium postaci')],
   },
   'intro-1': {
-    music: 'main', amb: { night: 0.8 },
+    music: 'main', amb: {},
     loc: shire,
     setup(ctx) {
       ctx.add('bilbo', 0.9, 4.7, Math.PI);
@@ -344,7 +344,7 @@ export const SCENES = {
     lines: [N(INTRO[0])],
   },
   'intro-2': {
-    music: 'main', amb: { night: 0.8 },
+    music: 'main', amb: {},
     loc: w => { battlefield(w, { fires: false }); dragon(w, 0, 175, -330, 120); },
     setup(ctx) {
       ctx.add('bilbo', 1.5, 28.5, Math.PI);
@@ -379,7 +379,7 @@ export const SCENES = {
     lines: [N(INTRO[3])],
   },
   'intro-5': {
-    music: 'main', amb: { night: 0.6, fire: 0.5 },
+    music: 'main', amb: { fire: 0.5 },
     loc: gateAndCamp,
     setup(ctx) {
       ctx.add('bard', 0.6, -14, 0); ctx.add('elfKing', -1.8, -14.5, 0.1);
@@ -394,7 +394,7 @@ export const SCENES = {
     lines: [N(INTRO[4])],
   },
   'intro-6': {
-    music: 'main', amb: { night: 0.7, fire: 0.2 },
+    music: 'main', amb: { fire: 0.2 },
     loc: gateAndCamp,
     setup(ctx) {
       const b = ctx.add('bilbo', 7.8, 1.1, Math.PI, 'idle', { y: 14 });
@@ -410,6 +410,7 @@ export const SCENES = {
 
   // ---------- Zakończenie 1 ----------
   'z1-przekazanie': {
+    night: true,   // jedyna scenka nocna: Bilbo dochodzi do obozu nocą; od negocjacji jest już dzień
     music: 'main', amb: { night: 0.5, fire: 0.9 },
     loc: gateAndCamp,
     setup(ctx) {
@@ -437,7 +438,7 @@ export const SCENES = {
     ],
   },
   'z1-negocjacje': {
-    music: 'main', amb: { night: 0.6, fire: 0.5 },
+    music: 'main', amb: { fire: 0.5 },
     loc: gateAndCamp,
     setup(ctx) { gateTalk(ctx, { gem: true }); ctx.camTo([5.4, 1.8, -5.6], [-0.6, 1.2, -4.9], 8, [7.2, 2.2, -6.4], [-0.6, 1.3, -4.9]); },
     lines: [
@@ -458,7 +459,7 @@ export const SCENES = {
     ],
   },
   'z1-atak': {
-    music: 'main', amb: { night: 0.5, fire: 0.3 },
+    music: 'main', amb: { fire: 0.3 },
     loc: battlefield,
     setup(ctx) {
       crowd(ctx, ['human', 'elf'], 0, -6, Math.PI, 12, 6, 'guard');
@@ -476,7 +477,7 @@ export const SCENES = {
     ],
   },
   'z1-kamien': {
-    music: 'main', amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    music: 'main', amb: { battle: 0.5, fire: 0.25 },
     loc: battlefield,
     setup(ctx) {
       battleAllies(ctx);
@@ -501,7 +502,7 @@ export const SCENES = {
     ],
   },
   'z1-goblin-strzela': {
-    music: 'main', amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    music: 'main', amb: { battle: 0.5, fire: 0.25 },
     loc: battlefield,
     setup(ctx) { archerShot(ctx, 'thorin'); },
     lines: [
@@ -511,7 +512,7 @@ export const SCENES = {
     ],
   },
   'z1-bard-krzyk': {
-    music: 'sad', amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    music: 'sad', amb: { battle: 0.5, fire: 0.25 },
     loc: battlefield,
     setup(ctx) {
       battleAllies(ctx);
@@ -549,7 +550,7 @@ export const SCENES = {
 
   // ---------- Zakończenia 2 i 3 ----------
   'z23-negocjacje': {
-    music: 'main', amb: { night: 0.6, fire: 0.5 },
+    music: 'main', amb: { fire: 0.5 },
     loc: gateAndCamp,
     setup(ctx) { gateTalk(ctx); ctx.camTo([5.4, 1.8, -5.6], [-0.6, 1.2, -4.9], 8, [7.2, 2.2, -6.4], [-0.6, 1.3, -4.9]); },
     keep: true,
@@ -562,7 +563,7 @@ export const SCENES = {
     ],
   },
   'z2-zgoda': {
-    music: 'main', amb: { night: 0.6, fire: 0.5 },
+    music: 'main', amb: { fire: 0.5 },
     loc: gateAndCamp,
     setup(ctx) {
       gateTalk(ctx);
@@ -578,7 +579,7 @@ export const SCENES = {
     ],
   },
   'z2-atak': {
-    music: 'main', amb: { night: 0.5, fire: 0.3 },
+    music: 'main', amb: { fire: 0.3 },
     loc: battlefield,
     setup(ctx) {
       crowd(ctx, ['human', 'elf'], 0, -6, Math.PI, 12, 6, 'guard');
@@ -596,7 +597,7 @@ export const SCENES = {
     ],
   },
   'z2-straty': {
-    music: 'sad', amb: { fire: 0.4, night: 0.3 },
+    music: 'sad', amb: { fire: 0.4 },
     loc: w => { battlefield(w); smokeColumn(w, -8, 1, -20, 1.5); smokeColumn(w, 10, 1, -14, 1.3); },
     setup(ctx) {
       for (let i = 0; i < 16; i++) ctx.add(i % 2 ? 'elf' : 'human', rnd(-16, 14), rnd(-30, -6), rnd(0, 6.3), 'death', { i });
@@ -612,7 +613,7 @@ export const SCENES = {
     ],
   },
   'z2-krol': {
-    music: 'sad', amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    music: 'sad', amb: { battle: 0.5, fire: 0.25 },
     loc: battlefield,
     setup(ctx) { archerShot(ctx, 'elfKing'); },
     lines: [
@@ -622,7 +623,7 @@ export const SCENES = {
     ],
   },
   'z3-dain': {
-    music: 'main', amb: { night: 0.6, fire: 0.5 },
+    music: 'main', amb: { fire: 0.5 },
     loc: gateAndCamp,
     setup(ctx) {
       const g = dwarfGroup(ctx, -2, -3, -Math.PI / 2 - 0.6, { n: 12 }); ctx.a = { thorin: g.thorin };
@@ -647,7 +648,7 @@ export const SCENES = {
     ],
   },
   'z3-gobliny': {
-    music: 'main', amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    music: 'main', amb: { battle: 0.5, fire: 0.25 },
     loc: battlefield,
     setup(ctx) {
       for (let i = 0; i < 10; i++) ctx.add(i % 3 ? 'ironDwarf' : 'dwarf', rnd(-14, 14), rnd(-20, 2), rnd(0, 6.3), 'death', { i });
@@ -666,7 +667,7 @@ export const SCENES = {
     ],
   },
   'z3-przegrana': {
-    music: 'sad', amb: { fire: 0.4, night: 0.2 },
+    music: 'sad', amb: { fire: 0.4 },
     loc: w => { battlefield(w); smokeColumn(w, -6, 1, -14, 1.5); smokeColumn(w, 8, 1, -8, 1.3); },
     setup(ctx) {
       for (let i = 0; i < 16; i++) ctx.add(i % 3 ? 'ironDwarf' : 'dwarf', rnd(-12, 12), rnd(-20, 2), rnd(0, 6.3), 'death', { i });
@@ -681,7 +682,7 @@ export const SCENES = {
     ],
   },
   'z3-thorin': {
-    music: 'sad', amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    music: 'sad', amb: { battle: 0.5, fire: 0.25 },
     loc: battlefield,
     setup(ctx) { archerShot(ctx, 'thorin'); },
     lines: [
@@ -691,7 +692,7 @@ export const SCENES = {
     ],
   },
   'z3-odejscie': {
-    music: 'sad', amb: { night: 0.6 },
+    music: 'sad', amb: {},
     loc: battlefield,
     setup(ctx) {
       for (let i = 0; i < 12; i++) ctx.add(i % 3 ? 'ironDwarf' : 'dwarf', rnd(-14, 14), rnd(-24, -2), rnd(0, 6.3), 'death', { i });
@@ -728,9 +729,10 @@ export async function playScene(id) {
     return;
   }
   music(def.music ?? 'main', def.music === 'sad' ? 0.7 : 0.6);
-  amb(def.amb || { night: 0.8 });
+  amb(def.amb || {});
   const w = nightWorld(def.world);
   def.loc(w);
+  if (!def.night) daylight(w);
   w.hemi.intensity *= 1.35;
   const ctx = makeCtx(w); ctx.id = id;
   camera.fov = BASE_FOV; camera.updateProjectionMatrix(); frameShift(0.12);

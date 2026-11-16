@@ -31,17 +31,19 @@ export function nightWorld({ fog = 0.022, sky = true, hemi = 0.9, moon = 0.7, sh
   const w = { scene, ups: [], rockMeshes: [], rocks: [], camBlock: [], focus: V(), h: () => 0 };
   if (sky) {
     w.sky = new THREE.Group(); scene.add(w.sky);
-    w.sky.add(new THREE.Mesh(new THREE.SphereGeometry(600, 32, 16), new THREE.ShaderMaterial({
+    w.skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false,
+      uniforms: { bot: { value: new THREE.Vector3(.20, .20, .36) }, top: { value: new THREE.Vector3(.02, .03, .09) } },
       vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
-      fragmentShader: 'varying vec3 vP; void main(){ float h = clamp(vP.y, 0., 1.); gl_FragColor = vec4(mix(vec3(.20,.20,.36), vec3(.02,.03,.09), pow(h, .5)), 1.); }'
-    })));
+      fragmentShader: 'uniform vec3 bot, top; varying vec3 vP; void main(){ float h = clamp(vP.y, 0., 1.); gl_FragColor = vec4(mix(bot, top, pow(h, .5)), 1.); }'
+    });
+    w.sky.add(new THREE.Mesh(new THREE.SphereGeometry(600, 32, 16), w.skyMat));
     const p = [];
     for (let i = 0; i < 1500; i++) {
       const th = Math.random() * Math.PI * 2, ph = Math.acos(0.05 + Math.random() * 0.95);
       p.push(Math.sin(ph) * Math.cos(th) * 500, Math.cos(ph) * 500, Math.sin(ph) * Math.sin(th) * 500);
     }
-    w.sky.add(new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(p, 3)),
+    w.sky.add(w.stars = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(p, 3)),
       new THREE.PointsMaterial({ color: 0xffffff, size: 1.4, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.85 })));
     const moonTex = canvasTex(128, (x, s) => {
       x.fillStyle = '#eef1f8'; x.beginPath(); x.arc(s / 2, s / 2, s * 0.42, 0, 7); x.fill();
@@ -50,6 +52,7 @@ export function nightWorld({ fog = 0.022, sky = true, hemi = 0.9, moon = 0.7, sh
     const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: moonTex, fog: false, depthWrite: false }));
     m.scale.setScalar(26); m.position.copy(MOON).multiplyScalar(450); w.sky.add(m);
     const mg = glow(0x8fa6d8, 170, false, 0.55); mg.position.copy(m.position); w.sky.add(mg);
+    w.moonSprites = [m, mg];
   }
   w.hemi = new THREE.HemisphereLight(0x3a4a80, 0x141820, hemi); scene.add(w.hemi);
   const ml = new THREE.DirectionalLight(0x9db2e8, moon);
@@ -65,6 +68,34 @@ export function nightWorld({ fog = 0.022, sky = true, hemi = 0.9, moon = 0.7, sh
     ml.position.copy(w.focus).addScaledVector(MOON, 80); ml.target.position.copy(w.focus);
   };
   return w;
+}
+
+// Dzień: wołane po zbudowaniu lokacji, a przed dodaniem postaci. Niebo, mgła i światła na dzienne,
+// ciemne (nocne) materiały otoczenia rozjaśnione na kopiach — współdzielone materiały zostają nocne dla innych scen.
+export function daylight(w) {
+  if (w.indoor) return;
+  if (w.skyMat) {
+    w.skyMat.uniforms.bot.value.set(.78, .82, .86); w.skyMat.uniforms.top.value.set(.30, .50, .80);
+    w.stars.visible = false; w.moonSprites.forEach(s => s.visible = false);
+  }
+  w.scene.fog.color.setHex(0xaeb8c4); w.scene.fog.density *= 0.45;
+  w.hemi.color.setHex(0xd8e6ff); w.hemi.groundColor.setHex(0x6a5e48); w.hemi.intensity = 1.5;
+  w.moon.color.setHex(0xfff0d8); w.moon.intensity = 2.6;
+  const lit = new Map(), hsl = {};
+  w.scene.traverse(o => {
+    if (!o.isMesh || Array.isArray(o.material)) return;
+    const m = o.material;
+    if (!m.color || m.blending === THREE.AdditiveBlending || m.isShaderMaterial) return;
+    if (!lit.has(m)) {
+      const c = m.clone();
+      c.color.getHSL(hsl, THREE.SRGBColorSpace);
+      if (m.userData.day) c.color.setHex(m.userData.day);
+      else if (m.isMeshBasicMaterial) { if (hsl.l < 0.22) c.color.setHSL(hsl.h, hsl.s * 0.6, 0.3 + hsl.l, THREE.SRGBColorSpace); }   // daleka góra: sinoszara
+      else if (hsl.l < 0.22) c.color.setHSL(hsl.h > 0.45 && hsl.h < 0.8 ? 0.09 : hsl.h, Math.max(0.15, hsl.s * 0.8), 0.18 + hsl.l * 1.6, THREE.SRGBColorSpace);   // nocny granat → ziemia
+      lit.set(m, c);
+    }
+    o.material = lit.get(m);
+  });
 }
 
 // oświetlenie postaci od strony kamery (bohater czytelny przy skale)
@@ -91,6 +122,7 @@ export function terrain(w, { x1, x2, z1, z2, step = 2, color = 0x0e1218, h }) {
 export function grass(w, { n = 9000, x1, x2, z1, z2, color = 0x1e2c36, skip }) {
   const geo = new THREE.ConeGeometry(0.025, 0.45, 3); geo.translate(0, 0.22, 0);
   const g = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color }), n);
+  g.material.userData.day = 0x5c6a34;
   const o = new THREE.Object3D();
   let k = 0;
   for (let i = 0; i < n * 2 && k < n; i++) {
@@ -102,7 +134,7 @@ export function grass(w, { n = 9000, x1, x2, z1, z2, color = 0x1e2c36, skip }) {
   g.count = k; g.receiveShadow = true; w.scene.add(g);
 }
 export function pines(w, n, place) {
-  const g = new THREE.InstancedMesh(new THREE.ConeGeometry(1.6, 6, 7), new THREE.MeshStandardMaterial({ color: 0x0a0e14, roughness: 1 }), n);
+  const g = new THREE.InstancedMesh(new THREE.ConeGeometry(1.6, 6, 7), new THREE.MeshStandardMaterial({ color: 0x0a0e14, roughness: 1, userData: { day: 0x2c4228 } }), n);
   const o = new THREE.Object3D();
   for (let i = 0; i < n; i++) {
     const [x, z] = place(i), s = rnd(0.8, 1.8);

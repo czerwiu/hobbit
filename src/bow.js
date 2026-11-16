@@ -1,7 +1,7 @@
 // Etap 3D: Bard z łukiem (zakończenia 1 i 2). Celowanie przez ramię, strzała leci łukiem.
 import * as THREE from 'three';
 import { $, camera, input, hit, rnd, damp, angLerp, angDiff, V } from './core.js';
-import { nightWorld, battlefield } from './env.js';
+import { nightWorld, daylight, battlefield } from './env.js';
 import { Char, Rider, makeBow, makeArrow } from './chars.js';
 import { TPP } from './tpp.js';
 import { hud, say, tip, center } from './ui.js';
@@ -17,6 +17,7 @@ const HIT_R = 1.25, REACH = 2.6, BITE_EVERY = 1.6;
 export function bowStage({ dwarves = 'fight' } = {}) {
   const w = nightWorld({ shadowSize: 50 });
   battlefield(w);
+  daylight(w);
   w.scene.fog.density = 0.012;   // wrogów widać z daleka
   const ctx = makeCtx(w);
   battleAllies(ctx, { dwarves: dwarves === 'fight' });
@@ -82,7 +83,7 @@ export function bowStage({ dwarves = 'fight' } = {}) {
   }
 
   const st = {
-    id: 'bard-luk', w, musicVol: 0.3, amb: { battle: 0.55, night: 0.3, fire: 0.25 },
+    id: 'bard-luk', w, musicVol: 0.3, amb: { battle: 0.55, fire: 0.25 },
     title: 'Bard z łukiem',
     text: 'Gobliny na wargach pędzą przez pole bitwy.\nPokonaj pięciu wrogów. Strzała leci łukiem i opada — gdy wróg jest daleko, celuj trochę wyżej.',
     keys: 'WASD — ruch · mysz — celowanie · prawy przycisk — przybliżenie · lewy przycisk — strzał · R — od nowa · Esc — pauza · M — dźwięk',

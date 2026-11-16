@@ -1,7 +1,7 @@
 // Zakończenie 3, etap 3D: Bilbo zakłada pierścień i chowa się za kamieniem. Bez możliwości przegranej.
 import * as THREE from 'three';
 import { hit, rnd, V } from './core.js';
-import { nightWorld, battlefield, glow } from './env.js';
+import { nightWorld, daylight, battlefield, glow } from './env.js';
 import { Char } from './chars.js';
 import { TPP } from './tpp.js';
 import { hud, tip, center, ringEffect } from './ui.js';
@@ -14,6 +14,7 @@ const SPOT = V(-14, 0, -20.2), SPOT_R = 1.4;   // miejsce za kamieniem (-14, -16
 export function hideStage() {
   const w = nightWorld({ shadowSize: 50 });
   battlefield(w);
+  daylight(w);
   const ctx = makeCtx(w);
   // tło: gobliny na wargach i ostatni krasnoludzi
   ctx.duel('dwarf', 'goblin', 8, -6, -0.6, { a: { i: 2 } });
@@ -34,7 +35,7 @@ export function hideStage() {
   let ringOn = false, warned = false;
 
   const st = {
-    id: 'bilbo-kamien', w, musicVol: 0.35, amb: { battle: 0.45, night: 0.4, fire: 0.2 },
+    id: 'bilbo-kamien', w, musicVol: 0.35, amb: { battle: 0.45, fire: 0.2 },
     title: 'Bilbo się chowa',
     text: 'Gobliny i wargi atakują osłabione krasnoludy. Bilbo nie umie walczyć.\nZałóż pierścień i schowaj się za kamieniem oznaczonym światłem.',
     keys: 'WASD — ruch · Shift — bieg · mysz — kamera · E — pierścień · Esc — pauza · M — dźwięk',

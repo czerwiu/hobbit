@@ -1,7 +1,7 @@
 // Zakończenie 3, etap 3D: Thorin z mieczem. Przeciwnicy padają ogłuszeni lub rozbrojeni (bez krwi).
 import * as THREE from 'three';
 import { $, input, hit, rnd, damp, angLerp, angDiff, V } from './core.js';
-import { nightWorld, battlefield } from './env.js';
+import { nightWorld, daylight, battlefield } from './env.js';
 import { Char } from './chars.js';
 import { TPP } from './tpp.js';
 import { hud, say, tip, center } from './ui.js';
@@ -17,6 +17,7 @@ const FOE_STOP = 1.7, FOE_ATTACK = [1.8, 2.6];
 export function swordStage() {
   const w = nightWorld({ shadowSize: 50 });
   battlefield(w);
+  daylight(w);
   const ctx = makeCtx(w);
   // tło: armia Dáina walczy z ludźmi i elfami
   ctx.duel('ironDwarf', 'human', -12, -22, 0.3, { a: { i: 0 }, b: { i: 1 } });
@@ -87,7 +88,7 @@ export function swordStage() {
   }
 
   const st = {
-    id: 'thorin-miecz', w, musicVol: 0.3, amb: { battle: 0.6, night: 0.3, fire: 0.25 },
+    id: 'thorin-miecz', w, musicVol: 0.3, amb: { battle: 0.6, fire: 0.25 },
     title: 'Thorin z mieczem',
     text: 'Krasnoludy walczą z ludźmi i elfami.\nPokonaj pięciu przeciwników. Każdy pada po dwóch ciosach — ogłuszony albo rozbrojony.',
     keys: 'WASD — ruch · Shift — bieg · mysz — kamera i kierunek ciosu · lewy przycisk — cios mieczem · R — od nowa · Esc — pauza · M — dźwięk',

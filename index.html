@@ -947,19 +947,21 @@ function nightWorld({ fog = 0.022, sky = true, hemi = 0.9, moon = 0.7, shadowSiz
   if (sky) {
     w.sky = new THREE3.Group();
     scene.add(w.sky);
-    w.sky.add(new THREE3.Mesh(new THREE3.SphereGeometry(600, 32, 16), new THREE3.ShaderMaterial({
+    w.skyMat = new THREE3.ShaderMaterial({
       side: THREE3.BackSide,
       depthWrite: false,
       fog: false,
+      uniforms: { bot: { value: new THREE3.Vector3(0.2, 0.2, 0.36) }, top: { value: new THREE3.Vector3(0.02, 0.03, 0.09) } },
       vertexShader: "varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }",
-      fragmentShader: "varying vec3 vP; void main(){ float h = clamp(vP.y, 0., 1.); gl_FragColor = vec4(mix(vec3(.20,.20,.36), vec3(.02,.03,.09), pow(h, .5)), 1.); }"
-    })));
+      fragmentShader: "uniform vec3 bot, top; varying vec3 vP; void main(){ float h = clamp(vP.y, 0., 1.); gl_FragColor = vec4(mix(bot, top, pow(h, .5)), 1.); }"
+    });
+    w.sky.add(new THREE3.Mesh(new THREE3.SphereGeometry(600, 32, 16), w.skyMat));
     const p = [];
     for (let i = 0; i < 1500; i++) {
       const th = Math.random() * Math.PI * 2, ph = Math.acos(0.05 + Math.random() * 0.95);
       p.push(Math.sin(ph) * Math.cos(th) * 500, Math.cos(ph) * 500, Math.sin(ph) * Math.sin(th) * 500);
     }
-    w.sky.add(new THREE3.Points(
+    w.sky.add(w.stars = new THREE3.Points(
       new THREE3.BufferGeometry().setAttribute("position", new THREE3.Float32BufferAttribute(p, 3)),
       new THREE3.PointsMaterial({ color: 16777215, size: 1.4, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.85 })
     ));
@@ -982,6 +984,7 @@ function nightWorld({ fog = 0.022, sky = true, hemi = 0.9, moon = 0.7, shadowSiz
     const mg = glow(9414360, 170, false, 0.55);
     mg.position.copy(m.position);
     w.sky.add(mg);
+    w.moonSprites = [m, mg];
   }
   w.hemi = new THREE3.HemisphereLight(3820160, 1316896, hemi);
   scene.add(w.hemi);
@@ -1001,6 +1004,38 @@ function nightWorld({ fog = 0.022, sky = true, hemi = 0.9, moon = 0.7, shadowSiz
     ml.target.position.copy(w.focus);
   };
   return w;
+}
+function daylight(w) {
+  if (w.indoor) return;
+  if (w.skyMat) {
+    w.skyMat.uniforms.bot.value.set(0.78, 0.82, 0.86);
+    w.skyMat.uniforms.top.value.set(0.3, 0.5, 0.8);
+    w.stars.visible = false;
+    w.moonSprites.forEach((s) => s.visible = false);
+  }
+  w.scene.fog.color.setHex(11450564);
+  w.scene.fog.density *= 0.45;
+  w.hemi.color.setHex(14214911);
+  w.hemi.groundColor.setHex(6970952);
+  w.hemi.intensity = 1.5;
+  w.moon.color.setHex(16773336);
+  w.moon.intensity = 2.6;
+  const lit = /* @__PURE__ */ new Map(), hsl = {};
+  w.scene.traverse((o) => {
+    if (!o.isMesh || Array.isArray(o.material)) return;
+    const m = o.material;
+    if (!m.color || m.blending === THREE3.AdditiveBlending || m.isShaderMaterial) return;
+    if (!lit.has(m)) {
+      const c = m.clone();
+      c.color.getHSL(hsl, THREE3.SRGBColorSpace);
+      if (m.userData.day) c.color.setHex(m.userData.day);
+      else if (m.isMeshBasicMaterial) {
+        if (hsl.l < 0.22) c.color.setHSL(hsl.h, hsl.s * 0.6, 0.3 + hsl.l, THREE3.SRGBColorSpace);
+      } else if (hsl.l < 0.22) c.color.setHSL(hsl.h > 0.45 && hsl.h < 0.8 ? 0.09 : hsl.h, Math.max(0.15, hsl.s * 0.8), 0.18 + hsl.l * 1.6, THREE3.SRGBColorSpace);
+      lit.set(m, c);
+    }
+    o.material = lit.get(m);
+  });
 }
 function fillAt(w, target, intensity = 14, back2 = 1.8) {
   const d = V().subVectors(camera.position, target).setY(0);
@@ -1028,6 +1063,7 @@ function grass(w, { n = 9e3, x1, x2, z1, z2, color = 1977398, skip }) {
   const geo = new THREE3.ConeGeometry(0.025, 0.45, 3);
   geo.translate(0, 0.22, 0);
   const g = new THREE3.InstancedMesh(geo, new THREE3.MeshLambertMaterial({ color }), n);
+  g.material.userData.day = 6056500;
   const o = new THREE3.Object3D();
   let k = 0;
   for (let i = 0; i < n * 2 && k < n; i++) {
@@ -1044,7 +1080,7 @@ function grass(w, { n = 9e3, x1, x2, z1, z2, color = 1977398, skip }) {
   w.scene.add(g);
 }
 function pines(w, n, place) {
-  const g = new THREE3.InstancedMesh(new THREE3.ConeGeometry(1.6, 6, 7), new THREE3.MeshStandardMaterial({ color: 658964, roughness: 1 }), n);
+  const g = new THREE3.InstancedMesh(new THREE3.ConeGeometry(1.6, 6, 7), new THREE3.MeshStandardMaterial({ color: 658964, roughness: 1, userData: { day: 2900520 } }), n);
   const o = new THREE3.Object3D();
   for (let i = 0; i < n; i++) {
     const [x, z] = place(i), s = rnd(0.8, 1.8);
@@ -1552,6 +1588,7 @@ function laketown(w) {
   mountain(w, -40, 50, -320, 180, 150);
 }
 function hall(w) {
+  w.indoor = true;
   w.scene.fog.color.setHex(657157);
   w.scene.fog.density = 0.035;
   w.hemi.intensity = 0.5;
@@ -1605,6 +1642,7 @@ function hall(w) {
   w.h = () => 0;
 }
 function tentInside(w) {
+  w.indoor = true;
   w.scene.fog.color.setHex(656900);
   w.scene.fog.density = 0.02;
   w.hemi.intensity = 0.35;
@@ -1796,7 +1834,7 @@ var SCENES = {
   },
   "intro-1": {
     music: "main",
-    amb: { night: 0.8 },
+    amb: {},
     loc: shire,
     setup(ctx) {
       ctx.add("bilbo", 0.9, 4.7, Math.PI);
@@ -1811,7 +1849,7 @@ var SCENES = {
   },
   "intro-2": {
     music: "main",
-    amb: { night: 0.8 },
+    amb: {},
     loc: (w) => {
       battlefield(w, { fires: false });
       dragon(w, 0, 175, -330, 120);
@@ -1853,7 +1891,7 @@ var SCENES = {
   },
   "intro-5": {
     music: "main",
-    amb: { night: 0.6, fire: 0.5 },
+    amb: { fire: 0.5 },
     loc: gateAndCamp,
     setup(ctx) {
       ctx.add("bard", 0.6, -14, 0);
@@ -1874,7 +1912,7 @@ var SCENES = {
   },
   "intro-6": {
     music: "main",
-    amb: { night: 0.7, fire: 0.2 },
+    amb: { fire: 0.2 },
     loc: gateAndCamp,
     setup(ctx) {
       const b = ctx.add("bilbo", 7.8, 1.1, Math.PI, "idle", { y: 14 });
@@ -1891,6 +1929,8 @@ var SCENES = {
   },
   // ---------- Zakończenie 1 ----------
   "z1-przekazanie": {
+    night: true,
+    // jedyna scenka nocna: Bilbo dochodzi do obozu nocą; od negocjacji jest już dzień
     music: "main",
     amb: { night: 0.5, fire: 0.9 },
     loc: gateAndCamp,
@@ -1939,7 +1979,7 @@ var SCENES = {
   },
   "z1-negocjacje": {
     music: "main",
-    amb: { night: 0.6, fire: 0.5 },
+    amb: { fire: 0.5 },
     loc: gateAndCamp,
     setup(ctx) {
       gateTalk(ctx, { gem: true });
@@ -1984,7 +2024,7 @@ var SCENES = {
   },
   "z1-atak": {
     music: "main",
-    amb: { night: 0.5, fire: 0.3 },
+    amb: { fire: 0.3 },
     loc: battlefield,
     setup(ctx) {
       crowd(ctx, ["human", "elf"], 0, -6, Math.PI, 12, 6, "guard");
@@ -2004,7 +2044,7 @@ var SCENES = {
   },
   "z1-kamien": {
     music: "main",
-    amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    amb: { battle: 0.5, fire: 0.25 },
     loc: battlefield,
     setup(ctx) {
       battleAllies(ctx);
@@ -2041,7 +2081,7 @@ var SCENES = {
   },
   "z1-goblin-strzela": {
     music: "main",
-    amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    amb: { battle: 0.5, fire: 0.25 },
     loc: battlefield,
     setup(ctx) {
       archerShot(ctx, "thorin");
@@ -2054,7 +2094,7 @@ var SCENES = {
   },
   "z1-bard-krzyk": {
     music: "sad",
-    amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    amb: { battle: 0.5, fire: 0.25 },
     loc: battlefield,
     setup(ctx) {
       battleAllies(ctx);
@@ -2103,7 +2143,7 @@ var SCENES = {
   // ---------- Zakończenia 2 i 3 ----------
   "z23-negocjacje": {
     music: "main",
-    amb: { night: 0.6, fire: 0.5 },
+    amb: { fire: 0.5 },
     loc: gateAndCamp,
     setup(ctx) {
       gateTalk(ctx);
@@ -2123,7 +2163,7 @@ var SCENES = {
   },
   "z2-zgoda": {
     music: "main",
-    amb: { night: 0.6, fire: 0.5 },
+    amb: { fire: 0.5 },
     loc: gateAndCamp,
     setup(ctx) {
       gateTalk(ctx);
@@ -2143,7 +2183,7 @@ var SCENES = {
   },
   "z2-atak": {
     music: "main",
-    amb: { night: 0.5, fire: 0.3 },
+    amb: { fire: 0.3 },
     loc: battlefield,
     setup(ctx) {
       crowd(ctx, ["human", "elf"], 0, -6, Math.PI, 12, 6, "guard");
@@ -2163,7 +2203,7 @@ var SCENES = {
   },
   "z2-straty": {
     music: "sad",
-    amb: { fire: 0.4, night: 0.3 },
+    amb: { fire: 0.4 },
     loc: (w) => {
       battlefield(w);
       smokeColumn(w, -8, 1, -20, 1.5);
@@ -2184,7 +2224,7 @@ var SCENES = {
   },
   "z2-krol": {
     music: "sad",
-    amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    amb: { battle: 0.5, fire: 0.25 },
     loc: battlefield,
     setup(ctx) {
       archerShot(ctx, "elfKing");
@@ -2197,7 +2237,7 @@ var SCENES = {
   },
   "z3-dain": {
     music: "main",
-    amb: { night: 0.6, fire: 0.5 },
+    amb: { fire: 0.5 },
     loc: gateAndCamp,
     setup(ctx) {
       const g = dwarfGroup(ctx, -2, -3, -Math.PI / 2 - 0.6, { n: 12 });
@@ -2233,7 +2273,7 @@ var SCENES = {
   },
   "z3-gobliny": {
     music: "main",
-    amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    amb: { battle: 0.5, fire: 0.25 },
     loc: battlefield,
     setup(ctx) {
       for (let i = 0; i < 10; i++) ctx.add(i % 3 ? "ironDwarf" : "dwarf", rnd(-14, 14), rnd(-20, 2), rnd(0, 6.3), "death", { i });
@@ -2253,7 +2293,7 @@ var SCENES = {
   },
   "z3-przegrana": {
     music: "sad",
-    amb: { fire: 0.4, night: 0.2 },
+    amb: { fire: 0.4 },
     loc: (w) => {
       battlefield(w);
       smokeColumn(w, -6, 1, -14, 1.5);
@@ -2275,7 +2315,7 @@ var SCENES = {
   },
   "z3-thorin": {
     music: "sad",
-    amb: { battle: 0.5, night: 0.25, fire: 0.25 },
+    amb: { battle: 0.5, fire: 0.25 },
     loc: battlefield,
     setup(ctx) {
       archerShot(ctx, "thorin");
@@ -2288,7 +2328,7 @@ var SCENES = {
   },
   "z3-odejscie": {
     music: "sad",
-    amb: { night: 0.6 },
+    amb: {},
     loc: battlefield,
     setup(ctx) {
       for (let i = 0; i < 12; i++) ctx.add(i % 3 ? "ironDwarf" : "dwarf", rnd(-14, 14), rnd(-24, -2), rnd(0, 6.3), "death", { i });
@@ -2332,9 +2372,10 @@ async function playScene(id) {
     return;
   }
   music(def.music ?? "main", def.music === "sad" ? 0.7 : 0.6);
-  amb(def.amb || { night: 0.8 });
+  amb(def.amb || {});
   const w = nightWorld(def.world);
   def.loc(w);
+  if (!def.night) daylight(w);
   w.hemi.intensity *= 1.35;
   const ctx = makeCtx(w);
   ctx.id = id;
@@ -3031,6 +3072,7 @@ var BITE_EVERY = 1.6;
 function bowStage({ dwarves = "fight" } = {}) {
   const w = nightWorld({ shadowSize: 50 });
   battlefield(w);
+  daylight(w);
   w.scene.fog.density = 0.012;
   const ctx = makeCtx(w);
   battleAllies(ctx, { dwarves: dwarves === "fight" });
@@ -3119,7 +3161,7 @@ function bowStage({ dwarves = "fight" } = {}) {
     id: "bard-luk",
     w,
     musicVol: 0.3,
-    amb: { battle: 0.55, night: 0.3, fire: 0.25 },
+    amb: { battle: 0.55, fire: 0.25 },
     title: "Bard z \u0142ukiem",
     text: "Gobliny na wargach p\u0119dz\u0105 przez pole bitwy.\nPokonaj pi\u0119ciu wrog\xF3w. Strza\u0142a leci \u0142ukiem i opada \u2014 gdy wr\xF3g jest daleko, celuj troch\u0119 wy\u017Cej.",
     keys: "WASD \u2014 ruch \xB7 mysz \u2014 celowanie \xB7 prawy przycisk \u2014 przybli\u017Cenie \xB7 lewy przycisk \u2014 strza\u0142 \xB7 R \u2014 od nowa \xB7 Esc \u2014 pauza \xB7 M \u2014 d\u017Awi\u0119k",
@@ -3260,6 +3302,7 @@ var FOE_ATTACK = [1.8, 2.6];
 function swordStage() {
   const w = nightWorld({ shadowSize: 50 });
   battlefield(w);
+  daylight(w);
   const ctx = makeCtx(w);
   ctx.duel("ironDwarf", "human", -12, -22, 0.3, { a: { i: 0 }, b: { i: 1 } });
   ctx.duel("ironDwarf", "elf", 10, -26, -0.3, { a: { i: 1 } });
@@ -3352,7 +3395,7 @@ function swordStage() {
     id: "thorin-miecz",
     w,
     musicVol: 0.3,
-    amb: { battle: 0.6, night: 0.3, fire: 0.25 },
+    amb: { battle: 0.6, fire: 0.25 },
     title: "Thorin z mieczem",
     text: "Krasnoludy walcz\u0105 z lud\u017Ami i elfami.\nPokonaj pi\u0119ciu przeciwnik\xF3w. Ka\u017Cdy pada po dw\xF3ch ciosach \u2014 og\u0142uszony albo rozbrojony.",
     keys: "WASD \u2014 ruch \xB7 Shift \u2014 bieg \xB7 mysz \u2014 kamera i kierunek ciosu \xB7 lewy przycisk \u2014 cios mieczem \xB7 R \u2014 od nowa \xB7 Esc \u2014 pauza \xB7 M \u2014 d\u017Awi\u0119k",
@@ -3443,6 +3486,7 @@ var SPOT_R = 1.4;
 function hideStage() {
   const w = nightWorld({ shadowSize: 50 });
   battlefield(w);
+  daylight(w);
   const ctx = makeCtx(w);
   ctx.duel("dwarf", "goblin", 8, -6, -0.6, { a: { i: 2 } });
   ctx.duel("ironDwarf", "goblin", 14, -14, -0.3);
@@ -3468,7 +3512,7 @@ function hideStage() {
     id: "bilbo-kamien",
     w,
     musicVol: 0.35,
-    amb: { battle: 0.45, night: 0.4, fire: 0.2 },
+    amb: { battle: 0.45, fire: 0.2 },
     title: "Bilbo si\u0119 chowa",
     text: "Gobliny i wargi atakuj\u0105 os\u0142abione krasnoludy. Bilbo nie umie walczy\u0107.\nZa\u0142\xF3\u017C pier\u015Bcie\u0144 i schowaj si\u0119 za kamieniem oznaczonym \u015Bwiat\u0142em.",
     keys: "WASD \u2014 ruch \xB7 Shift \u2014 bieg \xB7 mysz \u2014 kamera \xB7 E \u2014 pier\u015Bcie\u0144 \xB7 Esc \u2014 pauza \xB7 M \u2014 d\u017Awi\u0119k",
